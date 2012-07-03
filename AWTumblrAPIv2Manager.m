@@ -24,23 +24,36 @@
 #import <RestKit/GCOauth.h>
 #import "AWTumblrAPIv2Response.h"
 
+
 @interface AWTumblrAPIv2Manager()
 
 @property(nonatomic, strong) NSArray *postTypes;
 @property(nonatomic, strong) NSArray *postFilters;
 @property(nonatomic, strong) NSArray *postStates;
 @property(nonatomic, strong) NSArray *blogAvatarSizes;
+
+
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadObjectsBlockWithBlock:(AWTumblrAPIv2ManagerDidLoadResponse)callback;
+-(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey;
+
+
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadPostsBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
+
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadCreatedPostIdBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadEditPostIdBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadDeletePostIdBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
+
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadBlogInfoBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadBlogAvatarURLStringBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
+
 -(RKObjectLoaderDidFailWithErrorBlock)standardOnDidFailWithErrorBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(NSString *)hostNameForBlogNamed:(NSString *)blogName;
 
 @end
+
 
 @implementation AWTumblrAPIv2Manager
 
@@ -50,6 +63,7 @@ postTypes = _postTypes,
 postFilters = _postFilters,
 postStates = _postStates,
 blogAvatarSizes = _blogAvatarSizes;
+
 
 #pragma mark Class Methods
 +(AWTumblrAPIv2Manager *)sharedManager{
@@ -70,8 +84,10 @@ blogAvatarSizes = _blogAvatarSizes;
     return manager;
 }
 
+
 # pragma mark Helpers
 -(NSArray *)postTypes{
+    // An array of post type params available in the API (the first one is never used)
     if (!_postTypes) {
         // WARNING! This has to correspond to the order in TumblrPostType enum
         _postTypes = [NSArray arrayWithObjects:
@@ -89,7 +105,9 @@ blogAvatarSizes = _blogAvatarSizes;
     return _postTypes;
 }
 
+
 -(NSArray *)postFilters{
+    // An array of post filter params available in the API (the first one is never used)
     if (!_postFilters) {
         // WARNING! This has to correspond to the order in TumblrPostFilter enum
         _postFilters = [NSArray arrayWithObjects:
@@ -101,7 +119,9 @@ blogAvatarSizes = _blogAvatarSizes;
     return _postFilters;
 }
 
+
 -(NSArray *)postStates{
+    // An array of post state params available in the API (the first one is never used)
     if (!_postStates) {
         // WARNING! This has to correspond to the order in TumblrPostState enum
         _postStates = [NSArray arrayWithObjects:
@@ -114,7 +134,9 @@ blogAvatarSizes = _blogAvatarSizes;
     return _postStates;
 }
 
+
 -(NSArray *)blogAvatarSizes{
+    // An array of blog avatar sizes available in the API (the first one is never used)
     if (!_blogAvatarSizes) {
         _blogAvatarSizes = [NSArray arrayWithObjects:
                             [NSNumber numberWithInt:0],
@@ -132,7 +154,11 @@ blogAvatarSizes = _blogAvatarSizes;
     return _blogAvatarSizes;
 }
 
+
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadObjectsBlockWithBlock:(AWTumblrAPIv2ManagerDidLoadResponse)callback{
+    // This is our standard way of interacting with responses from the API: we check, if we actually succeeded
+    // with loading a AWTumblrAPIv2Response object from the response and if so, we fire a provided callback with
+    // the object as only parameter
     return ^(NSArray *objects){
         if (![objects count]) {
             NSLog(@"Strange... the api manager received a proper response with no data in it.");
@@ -143,100 +169,123 @@ blogAvatarSizes = _blogAvatarSizes;
     };
 }
 
--(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadPostsBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    AWTumblrAPIv2ManagerDidLoadResponse callback = ^(AWTumblrAPIv2Response *apiResponse){
-        if ([[apiResponse.meta valueForKey:@"status"] isEqualToNumber:[NSNumber numberWithInt:200]]) {
-            if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didLoadPosts:)]) {
-                NSArray *posts = [apiResponse.response valueForKey:@"posts"];
-                [delegate tumblrAPIv2Manager:self didLoadPosts:posts];
+
+-(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey{
+    AWTumblrAPIv2ManagerDidLoadResponse block = ^(AWTumblrAPIv2Response *apiResponse){
+        // This is our standard way of interacting with AWTumblrAPIv2Response objects
+        
+        // First we check if we got the expected status code
+        if ([[apiResponse.meta valueForKey:@"status"] isEqualToNumber:statusCode]) {
+            // Then we stop, if the provided delegate doesn't respond to the provided selector
+            if (![delegate respondsToSelector:selector]) {
+                return;
             }
+            id param;
+            if (responseKey) {
+                // If we want value for some specific key in apiResponse.response, we get it here...
+                param = [apiResponse.response valueForKey:responseKey];
+            }else{
+                // ... otherwire we will just pass the apiResponse.response itself as the parameter
+                // of the provided selector on our delegate
+                param = apiResponse.response;
+            }
+            // We perform the selector on delegate with current instance of api manager as the first
+            // parameter and the second parameter being the object we have just set.
+            [delegate performSelector:selector withObject:self withObject:param];
         }else if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didReceiveErrorMessage:)]) {
+            // If we didn't get the expected status code, we just call a default error selector
+            // on the delegate
             // Note: it would be better to map tumblr's error messages to something else
             [delegate tumblrAPIv2Manager:self didReceiveErrorMessage:[apiResponse.meta valueForKey:@"msg"]];
         }
     };
-    
-    return [self standardOnDidLoadObjectsBlockWithBlock:callback];
+    return block;
 }
+
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadPostsBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadPosts:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = @"posts";
+    
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
+}
+
 
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadCreatedPostIdBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    AWTumblrAPIv2ManagerDidLoadResponse callback = ^(AWTumblrAPIv2Response *apiResponse){
-        if ([[apiResponse.meta valueForKey:@"status"] isEqualToNumber:[NSNumber numberWithInt:201]]) {
-            if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didCreatePostWithId:)]) {
-                NSNumber *postId = [apiResponse.response valueForKey:@"id"];
-                [delegate tumblrAPIv2Manager:self didCreatePostWithId:postId];
-            }
-        }else if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didReceiveErrorMessage:)]) {
-            // Note: it would be better to map tumblr's error messages to something else
-            [delegate tumblrAPIv2Manager:self didReceiveErrorMessage:[apiResponse.meta valueForKey:@"msg"]];
-        }
-    };
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didCreatePostWithId:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:201];
+    NSString *responseKeyToGet = @"id";
     
-    return [self standardOnDidLoadObjectsBlockWithBlock:callback];
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
 
--(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadEditPostIdBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    AWTumblrAPIv2ManagerDidLoadResponse callback = ^(AWTumblrAPIv2Response *apiResponse){
-        if ([[apiResponse.meta valueForKey:@"status"] isEqualToNumber:[NSNumber numberWithInt:200]]) {
-            if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didEditPostWithId:)]) {
-                NSNumber *postId = [apiResponse.response valueForKey:@"id"];
-                [delegate tumblrAPIv2Manager:self didEditPostWithId:postId];
-            }
-        }else if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didReceiveErrorMessage:)]) {
-            // Note: it would be better to map tumblr's error messages to something else
-            [delegate tumblrAPIv2Manager:self didReceiveErrorMessage:[apiResponse.meta valueForKey:@"msg"]];
-        }
-    };
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadEditPostIdBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{   
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didEditPostWithId:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = @"id";
     
-    return [self standardOnDidLoadObjectsBlockWithBlock:callback];
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
 
--(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadDeletePostIdBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    AWTumblrAPIv2ManagerDidLoadResponse callback = ^(AWTumblrAPIv2Response *apiResponse){
-        if ([[apiResponse.meta valueForKey:@"status"] isEqualToNumber:[NSNumber numberWithInt:200]]) {
-            if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didDeletePostWithId:)]) {
-                NSNumber *postId = [apiResponse.response valueForKey:@"id"];
-                [delegate tumblrAPIv2Manager:self didDeletePostWithId:postId];
-            }
-        }else if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didReceiveErrorMessage:)]) {
-            // Note: it would be better to map tumblr's error messages to something else
-            [delegate tumblrAPIv2Manager:self didReceiveErrorMessage:[apiResponse.meta valueForKey:@"msg"]];
-        }
-    };
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadDeletePostIdBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{    
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didDeletePostWithId:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = @"id";
     
-    return [self standardOnDidLoadObjectsBlockWithBlock:callback];
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
+
 
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadBlogInfoBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    AWTumblrAPIv2ManagerDidLoadResponse callback = ^(AWTumblrAPIv2Response *apiResponse){
-        if ([[apiResponse.meta valueForKey:@"status"] isEqualToNumber:[NSNumber numberWithInt:200]]){
-            if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didLoadBlogInfo:)]){
-                [delegate tumblrAPIv2Manager:self didLoadBlogInfo:apiResponse.response];
-            }
-        }else if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didReceiveErrorMessage:)]){
-            // Note: it would be better to map tumblr's error messages to something else
-            [delegate tumblrAPIv2Manager:self didReceiveErrorMessage:[apiResponse.meta valueForKey:@"msg"]];
-        }
-    };
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadBlogInfo:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = nil;
     
-    return [self standardOnDidLoadObjectsBlockWithBlock:callback];
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
 
+
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadBlogAvatarURLStringBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    AWTumblrAPIv2ManagerDidLoadResponse callback = ^(AWTumblrAPIv2Response *apiResponse){
-        if ([[apiResponse.meta valueForKey:@"status"] isEqualToNumber:[NSNumber numberWithInt:301]]) {
-            if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didLoadBlogAvatarURLString:)]) {
-                NSString *avatarURLString = [apiResponse.response valueForKey:@"avatar_url"];
-                [delegate tumblrAPIv2Manager:self didLoadBlogAvatarURLString:avatarURLString];
-            }
-        }else if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didReceiveErrorMessage:)]) {
-            // Note: it would be better to map tumblr's error messages to something else
-            [delegate tumblrAPIv2Manager:self didReceiveErrorMessage:[apiResponse.meta valueForKey:@"msg"]];
-        }
-    };
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadBlogAvatarURLString:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:301];
+    NSString *responseKeyToGet = @"avatar_url";
     
-    return [self standardOnDidLoadObjectsBlockWithBlock:callback];
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
+
 
 -(RKObjectLoaderDidFailWithErrorBlock)standardOnDidFailWithErrorBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     return ^(NSError *error){
@@ -246,9 +295,11 @@ blogAvatarSizes = _blogAvatarSizes;
     };
 }
 
+
 -(NSString *)hostNameForBlogNamed:(NSString *)blogName{
     return [NSString stringWithFormat:@"%@.tumblr.com", blogName];
 }
+
 
 -(NSDictionary *)parseTokensFromQueryString:(NSString *)query{
     NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithCapacity:2];
@@ -263,6 +314,7 @@ blogAvatarSizes = _blogAvatarSizes;
     }
     return dict;
 }
+
 
 # pragma mark Authentication
 -(void)requestAccessTokensWithConsumerKey:(NSString *)consumerKey andConsumerSecretKey:(NSString *)consumerSecretKey andUsername:(NSString *)username andPassword:(NSString *)password delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
@@ -342,6 +394,7 @@ blogAvatarSizes = _blogAvatarSizes;
     [request send];
 }
 
+
 # pragma mark API Call with OAuth Authentication
 -(void)requestDashboardWithLimit:(NSNumber *)limit andOffset:(NSNumber *)offset andType:(TumblrPostType)type since:(NSNumber *)since delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare params
@@ -359,6 +412,7 @@ blogAvatarSizes = _blogAvatarSizes;
         loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
     }];
 }
+
 
 -(void)createTextPostWithTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare POST params
@@ -380,6 +434,7 @@ blogAvatarSizes = _blogAvatarSizes;
         loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
     }];
 }
+
 
 -(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare POST params
@@ -404,6 +459,7 @@ blogAvatarSizes = _blogAvatarSizes;
 
 }
 
+
 -(void)deletePostWithId:(NSNumber *)postId inBlogWithName:(NSString *)blogName delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare POST params
     NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:@"id", postId, nil];
@@ -420,6 +476,7 @@ blogAvatarSizes = _blogAvatarSizes;
 
 }
 
+
 # pragma mark API Call with API Key Authorization
 -(void)requestInfoAboutBlogNamed:(NSString *)blogName delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Add the api_key param, since we're not authenticating with oauth in this case
@@ -435,6 +492,7 @@ blogAvatarSizes = _blogAvatarSizes;
     }];
 
 }
+
 
 -(void)requestPostsFromBlogNamed:(NSString *)blogName withLimit:(NSNumber *)limit andOffset:(NSNumber *)offset andType:(TumblrPostType)type andTag:(NSString *)tag andFilter:(TumblrPostFilter)filter delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare params
@@ -457,6 +515,7 @@ blogAvatarSizes = _blogAvatarSizes;
 
 }
 
+
 -(void)requestPostFromBlogNamed:(NSString *)blogName withId:(NSString *)postId delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare params
     NSDictionary *queryParams = [NSDictionary dictionaryWithKeysAndObjects:
@@ -471,6 +530,7 @@ blogAvatarSizes = _blogAvatarSizes;
         loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
     }];
 }
+
 
 # pragma mark API Call without Authentication
 -(void)requestAvatarOfBlogNamed:(NSString *)blogName withSize:(TumblrBlogAvatarSize)size delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
@@ -488,4 +548,5 @@ blogAvatarSizes = _blogAvatarSizes;
         loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
     }];
 }
+
 @end
