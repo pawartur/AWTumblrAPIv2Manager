@@ -28,6 +28,8 @@
 
 -(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didLoadPosts:(NSArray *)posts;
 -(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didCreatePostWithId:(NSNumber *)postId;
+-(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didEditPostWithId:(NSNumber *)postId;
+-(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didDeletePostWithId:(NSNumber *)postId;
 -(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didLoadBlogInfo:(NSDictionary *)blogInfo;
 -(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didLoadBlogAvatarURLString:(NSString *)urlString;
 -(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didReceiveErrorMessage:(NSString *)message;

@@ -33,6 +33,8 @@
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadObjectsBlockWithBlock:(AWTumblrAPIv2ManagerDidLoadResponse)callback;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadPostsBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadCreatedPostIdBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadEditPostIdBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadDeletePostIdBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadBlogInfoBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadBlogAvatarURLStringBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidFailWithErrorBlock)standardOnDidFailWithErrorBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
@@ -163,6 +165,38 @@ blogAvatarSizes = _blogAvatarSizes;
             if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didCreatePostWithId:)]) {
                 NSNumber *postId = [apiResponse.response valueForKey:@"id"];
                 [delegate tumblrAPIv2Manager:self didCreatePostWithId:postId];
+            }
+        }else if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didReceiveErrorMessage:)]) {
+            // Note: it would be better to map tumblr's error messages to something else
+            [delegate tumblrAPIv2Manager:self didReceiveErrorMessage:[apiResponse.meta valueForKey:@"msg"]];
+        }
+    };
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:callback];
+}
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadEditPostIdBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    AWTumblrAPIv2ManagerDidLoadResponse callback = ^(AWTumblrAPIv2Response *apiResponse){
+        if ([[apiResponse.meta valueForKey:@"status"] isEqualToNumber:[NSNumber numberWithInt:200]]) {
+            if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didEditPostWithId:)]) {
+                NSNumber *postId = [apiResponse.response valueForKey:@"id"];
+                [delegate tumblrAPIv2Manager:self didEditPostWithId:postId];
+            }
+        }else if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didReceiveErrorMessage:)]) {
+            // Note: it would be better to map tumblr's error messages to something else
+            [delegate tumblrAPIv2Manager:self didReceiveErrorMessage:[apiResponse.meta valueForKey:@"msg"]];
+        }
+    };
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:callback];
+}
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadDeletePostIdBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    AWTumblrAPIv2ManagerDidLoadResponse callback = ^(AWTumblrAPIv2Response *apiResponse){
+        if ([[apiResponse.meta valueForKey:@"status"] isEqualToNumber:[NSNumber numberWithInt:200]]) {
+            if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didDeletePostWithId:)]) {
+                NSNumber *postId = [apiResponse.response valueForKey:@"id"];
+                [delegate tumblrAPIv2Manager:self didDeletePostWithId:postId];
             }
         }else if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didReceiveErrorMessage:)]) {
             // Note: it would be better to map tumblr's error messages to something else
@@ -345,6 +379,45 @@ blogAvatarSizes = _blogAvatarSizes;
         loader.onDidLoadObjects = [self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate];
         loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
     }];
+}
+
+-(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    // Prepare POST params
+    NSMutableDictionary *params = [NSMutableDictionary dictionaryWithCapacity:7];
+    [params setObject:@"text" forKey:@"type"];
+    [params setObject:postId forKey:@"id"];
+    [params setObject:title forKey:@"title"];
+    [params setObject:body forKey:@"body"];
+    [params setObject:(usesMarkdown ? @"True": @"False") forKey:@"markdown"];
+    if (state) [params setObject:[self.postStates objectAtIndex:state] forKey:@"state"];
+    if (tags) [params setObject:[tags componentsJoinedByString:@","] forKey:@"tags"];
+    
+    // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
+    // so the params must be both in the urlString and in the request's params
+    NSString *editPostURLString = [NSString stringWithFormat:@"/blog/%@/post/edit", [self hostNameForBlogNamed:blogName]];
+    [self.objectManager loadObjectsAtResourcePath:[editPostURLString stringByAppendingQueryParameters:params] usingBlock:^(RKObjectLoader *loader){
+        loader.method = RKRequestMethodPOST;
+        loader.params = params;
+        loader.onDidLoadObjects = [self standardOnDidLoadEditPostIdBlockWithDelegate:delegate];
+        loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
+    }];
+
+}
+
+-(void)deletePostWithId:(NSNumber *)postId inBlogWithName:(NSString *)blogName delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    // Prepare POST params
+    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:@"id", postId, nil];
+    
+    // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
+    // so the params must be both in the urlString and in the request's params
+    NSString *deletePostURLString = [NSString stringWithFormat:@"/blog/%@/post/delete", [self hostNameForBlogNamed:blogName]];
+    [self.objectManager loadObjectsAtResourcePath:[deletePostURLString stringByAppendingQueryParameters:params] usingBlock:^(RKObjectLoader *loader){
+        loader.method = RKRequestMethodPOST;
+        loader.params = params;
+        loader.onDidLoadObjects = [self standardOnDidLoadDeletePostIdBlockWithDelegate:delegate];
+        loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
+    }];
+
 }
 
 # pragma mark API Call with API Key Authorization
