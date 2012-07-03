@@ -7,6 +7,8 @@ It requires RestKit 0.10.0.
 It currently supports authentication and the following API calls (see the manager's header file for details):
 - /user/dashboard
 - /blog/{base-hostname}/post (creating posts with type="text" only, for now)
+- /blog/{base-hostname}/post/edit (editing posts with type="text" only, for now)
+- /blog/{base-hostname}/delete
 - /blog/{base-hostname}/info
 - /blog/{base-hostname}/posts
 - /blog/{base-hostname}/avatar
