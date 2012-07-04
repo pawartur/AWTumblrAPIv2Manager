@@ -191,7 +191,13 @@ blogAvatarSizes = _blogAvatarSizes;
             }
             // We perform the selector on delegate with current instance of api manager as the first
             // parameter and the second parameter being the object we have just set.
+            #pragma clang diagnostic push
+            #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+            // NOTE: It seems to me that we can safely turn off the leak warning in this case,
+            // since we're not assigning the return value of the message, so ARC won't have to decide
+            // whether to retain or release anything because of this unknown selector.
             [delegate performSelector:selector withObject:self withObject:param];
+            #pragma clang diagnostic pop
         }else if ([delegate respondsToSelector:@selector(tumblrAPIv2Manager:didReceiveErrorMessage:)]) {
             // If we didn't get the expected status code, we just call a default error selector
             // on the delegate
