@@ -38,7 +38,7 @@
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadObjectsBlockWithBlock:(AWTumblrAPIv2ManagerDidLoadResponse)callback;
 -(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey;
 
-
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadUserInfoBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadPostsBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectBlock)standardOnDidLoadBlogFollowersBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 
@@ -230,6 +230,20 @@ blogAvatarSizes = _blogAvatarSizes;
         }
     };
     return block;
+}
+
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadUserInfoBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadUserInfo:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = @"user";
+    
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
 
 
@@ -440,6 +454,15 @@ blogAvatarSizes = _blogAvatarSizes;
 
 
 # pragma mark API Call with OAuth Authentication
+-(void)requestUserInfoWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    [self callAPIWithURLString:@"/user/info" 
+                     andParams:nil 
+                     andMethod:RKRequestMethodPOST 
+     andDidLoadObjectsCallback:[self standardOnDidLoadUserInfoBlockWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
+}
+
 -(void)requestDashboardWithLimit:(NSNumber *)limit andOffset:(NSNumber *)offset andType:(TumblrPostType)type since:(NSNumber *)since delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare params
     NSMutableDictionary *queryParams = [NSMutableDictionary dictionaryWithCapacity:4];

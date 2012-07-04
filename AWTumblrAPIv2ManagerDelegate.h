@@ -26,6 +26,7 @@
 
 -(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didAuthenticateAndReceivedAccessToken:(NSString *)accessToken andAccessTokenSecret:(NSString *)accessTokenSecret;
 
+-(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didLoadUserInfo:(NSDictionary *)userInfo;
 -(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didLoadPosts:(NSArray *)posts;
 -(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didBlogFollowersInfo:(NSDictionary *)blogFollowersInfo;
 -(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didCreatePostWithId:(NSNumber *)postId;
