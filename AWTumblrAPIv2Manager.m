@@ -33,11 +33,14 @@
 @property(nonatomic, strong) NSArray *blogAvatarSizes;
 
 
+-(void)callAPIWithURLString:(NSString *)urlString andParams:(NSDictionary *)params andMethod:(RKRequestMethod)method andDidLoadObjectsCallback:(RKObjectLoaderDidLoadObjectsBlock)successCallback andDidFailWithErrorCallback:(RKObjectLoaderDidFailWithErrorBlock)errorCallback andPreRequestCallback:(RKObjectLoaderBlock)preRequestCallback;
+
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadObjectsBlockWithBlock:(AWTumblrAPIv2ManagerDidLoadResponse)callback;
 -(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey;
 
 
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadPostsBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+-(RKObjectLoaderDidLoadObjectBlock)standardOnDidLoadBlogFollowersBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 
 
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadCreatedPostIdBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
@@ -73,11 +76,20 @@ blogAvatarSizes = _blogAvatarSizes;
         RKLogConfigureByName("RestKit/Network*", RKLogLevelTrace);
         //RKLogConfigureByName("RestKit/ObjectMapping", RKLogLevelTrace);
         manager = [[AWTumblrAPIv2Manager alloc] init];
+        
         RKObjectManager *objectManager = [RKObjectManager managerWithBaseURLString:@"http://api.tumblr.com/v2/"];
+        
         RKObjectMapping *apiResponseMapping = [RKObjectMapping mappingForClass:[AWTumblrAPIv2Response class]];
+        
         [apiResponseMapping mapKeyPath:@"meta" toAttribute:@"meta"];
         [apiResponseMapping mapKeyPath:@"response" toAttribute:@"response"];
         [objectManager.mappingProvider setMapping:apiResponseMapping forKeyPath:@""];
+        
+        RKObjectMapping *apiErrorResponseMapping = [RKObjectMapping mappingForClass:[AWTumblrAPIv2ErrorResponse class]];
+        [apiErrorResponseMapping mapKeyPath:@"meta" toAttribute:@"meta"];
+        [apiErrorResponseMapping mapKeyPath:@"response" toAttribute:@"response"];
+        [objectManager.mappingProvider setErrorMapping:apiErrorResponseMapping];
+        
         [RKObjectManager setSharedManager:objectManager];
         manager.objectManager = objectManager;
     });
@@ -154,6 +166,18 @@ blogAvatarSizes = _blogAvatarSizes;
     return _blogAvatarSizes;
 }
 
+-(void)callAPIWithURLString:(NSString *)urlString andParams:(NSDictionary *)params andMethod:(RKRequestMethod)method andDidLoadObjectsCallback:(RKObjectLoaderDidLoadObjectsBlock)successCallback andDidFailWithErrorCallback:(RKObjectLoaderDidFailWithErrorBlock)errorCallback andPreRequestCallback:(RKObjectLoaderBlock)preRequestCallback{
+    [self.objectManager loadObjectsAtResourcePath:[urlString stringByAppendingQueryParameters:params] usingBlock:^(RKObjectLoader *loader){
+        loader.method = method;
+        loader.params = params;
+        loader.onDidLoadObjects = successCallback;
+        loader.onDidFailWithError = errorCallback;
+        if (preRequestCallback) {
+            preRequestCallback(loader);
+        }
+    }];
+}
+
 
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadObjectsBlockWithBlock:(AWTumblrAPIv2ManagerDidLoadResponse)callback{
     // This is our standard way of interacting with responses from the API: we check, if we actually succeeded
@@ -213,6 +237,20 @@ blogAvatarSizes = _blogAvatarSizes;
     SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadPosts:);
     NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
     NSString *responseKeyToGet = @"posts";
+    
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
+}
+
+
+-(RKObjectLoaderDidLoadObjectBlock)standardOnDidLoadBlogFollowersBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didBlogFollowersInfo:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = nil;
     
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
@@ -410,13 +448,33 @@ blogAvatarSizes = _blogAvatarSizes;
     if (type)[queryParams setObject:[self.postTypes objectAtIndex:type] forKey:@"type"];
     if (since)[queryParams setObject:since forKey:@"since"];
     
-    // Make the request
+    // Prepare base URL string
     NSString *dashboardURLString = @"/user/dashboard";
-    [self.objectManager loadObjectsAtResourcePath:[dashboardURLString stringByAppendingQueryParameters:queryParams] usingBlock:^(RKObjectLoader *loader){
-        // Set response handlers
-        loader.onDidLoadObjects =  [self standardOnDidLoadPostsBlockWithDelegate:delegate];
-        loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
-    }];
+    
+    // Make the request
+    [self callAPIWithURLString:[dashboardURLString stringByAppendingQueryParameters:queryParams] 
+                     andParams:queryParams 
+                     andMethod:RKRequestMethodGET 
+     andDidLoadObjectsCallback:[self standardOnDidLoadPostsBlockWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
+}
+
+
+-(void)requestFollowersForBlogWithName:(NSString *)blogName andLimit:(NSNumber *)limit andOffset:(NSNumber *)offset delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    // Prepare params
+    NSMutableDictionary *queryParams = [NSMutableDictionary dictionaryWithCapacity:2];
+    if (limit)[queryParams setObject:limit forKey:@"limit"];
+    if (offset)[queryParams setObject:offset forKey:@"offset"];
+
+    // Prepare base URL string
+    NSString *blogFollowersURLString = [NSString stringWithFormat:@"/blog/%@/followers", [self hostNameForBlogNamed:blogName]];
+    [self callAPIWithURLString:[blogFollowersURLString stringByAppendingQueryParameters:queryParams] 
+                     andParams:nil 
+                     andMethod:RKRequestMethodGET 
+     andDidLoadObjectsCallback:[self standardOnDidLoadBlogFollowersBlockWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
 }
 
 
@@ -432,13 +490,13 @@ blogAvatarSizes = _blogAvatarSizes;
     
     // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
     // so the params must be both in the urlString and in the request's params
-    NSString *createPostURLString = [NSString stringWithFormat:@"/blog/%@/post", [self hostNameForBlogNamed:blogName]];
-    [self.objectManager loadObjectsAtResourcePath:[createPostURLString stringByAppendingQueryParameters:params] usingBlock:^(RKObjectLoader *loader){
-        loader.method = RKRequestMethodPOST;
-        loader.params = params;
-        loader.onDidLoadObjects = [self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate];
-        loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
-    }];
+    NSString *createPostURLString = [NSString stringWithFormat:@"/blog/%@/post", [self hostNameForBlogNamed:blogName]];   
+    [self callAPIWithURLString:[createPostURLString stringByAppendingQueryParameters:params] 
+                     andParams:params 
+                     andMethod:RKRequestMethodPOST 
+     andDidLoadObjectsCallback:[self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
 }
 
 
@@ -456,13 +514,12 @@ blogAvatarSizes = _blogAvatarSizes;
     // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
     // so the params must be both in the urlString and in the request's params
     NSString *editPostURLString = [NSString stringWithFormat:@"/blog/%@/post/edit", [self hostNameForBlogNamed:blogName]];
-    [self.objectManager loadObjectsAtResourcePath:[editPostURLString stringByAppendingQueryParameters:params] usingBlock:^(RKObjectLoader *loader){
-        loader.method = RKRequestMethodPOST;
-        loader.params = params;
-        loader.onDidLoadObjects = [self standardOnDidLoadEditPostIdBlockWithDelegate:delegate];
-        loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
-    }];
-
+    [self callAPIWithURLString:[editPostURLString stringByAppendingQueryParameters:params] 
+                     andParams:params 
+                     andMethod:RKRequestMethodPOST 
+     andDidLoadObjectsCallback:[self standardOnDidLoadEditPostIdBlockWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
 }
 
 
@@ -470,16 +527,13 @@ blogAvatarSizes = _blogAvatarSizes;
     // Prepare POST params
     NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:@"id", postId, nil];
     
-    // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
-    // so the params must be both in the urlString and in the request's params
     NSString *deletePostURLString = [NSString stringWithFormat:@"/blog/%@/post/delete", [self hostNameForBlogNamed:blogName]];
-    [self.objectManager loadObjectsAtResourcePath:[deletePostURLString stringByAppendingQueryParameters:params] usingBlock:^(RKObjectLoader *loader){
-        loader.method = RKRequestMethodPOST;
-        loader.params = params;
-        loader.onDidLoadObjects = [self standardOnDidLoadDeletePostIdBlockWithDelegate:delegate];
-        loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
-    }];
-
+    [self callAPIWithURLString:deletePostURLString 
+                     andParams:params 
+                     andMethod:RKRequestMethodPOST 
+     andDidLoadObjectsCallback:[self standardOnDidLoadDeletePostIdBlockWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
 }
 
 
@@ -492,11 +546,12 @@ blogAvatarSizes = _blogAvatarSizes;
     
     // Make the request
     NSString *blogInfoURLString = [NSString stringWithFormat:@"/blog/%@/info/", [self hostNameForBlogNamed:blogName]];
-    [self.objectManager loadObjectsAtResourcePath:[blogInfoURLString stringByAppendingQueryParameters:queryParams] usingBlock:^(RKObjectLoader *loader){
-        loader.onDidLoadObjects = [self standardOnDidLoadBlogInfoBlockWithDelegate:delegate];        
-        loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
-    }];
-
+    [self callAPIWithURLString:[blogInfoURLString stringByAppendingQueryParameters:queryParams] 
+                     andParams:nil 
+                     andMethod:RKRequestMethodGET 
+     andDidLoadObjectsCallback:[self standardOnDidLoadBlogInfoBlockWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
 }
 
 
@@ -513,12 +568,12 @@ blogAvatarSizes = _blogAvatarSizes;
     
     // Make the request
     NSString *postsURLString = [NSString stringWithFormat:@"/blog/%@/posts/", [self hostNameForBlogNamed:blogName]];
-    [self.objectManager loadObjectsAtResourcePath:[postsURLString stringByAppendingQueryParameters:queryParams] usingBlock:^(RKObjectLoader *loader){
-        // Set response handlers
-        loader.onDidLoadObjects = [self standardOnDidLoadPostsBlockWithDelegate:delegate];
-        loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
-    }];
-
+    [self callAPIWithURLString:[postsURLString stringByAppendingQueryParameters:queryParams] 
+                     andParams:nil 
+                     andMethod:RKRequestMethodGET 
+     andDidLoadObjectsCallback:[self standardOnDidLoadPostsBlockWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
 }
 
 
@@ -530,11 +585,12 @@ blogAvatarSizes = _blogAvatarSizes;
                                  nil];
     // Make the request
     NSString *postsURLString = [NSString stringWithFormat:@"/blog/%@/posts/", [self hostNameForBlogNamed:blogName]];
-    [self.objectManager loadObjectsAtResourcePath:[postsURLString stringByAppendingQueryParameters:queryParams] usingBlock:^(RKObjectLoader *loader){
-        // Set response handlers
-        loader.onDidLoadObjects = [self standardOnDidLoadPostsBlockWithDelegate:delegate];
-        loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
-    }];
+    [self callAPIWithURLString:[postsURLString stringByAppendingQueryParameters:queryParams] 
+                     andParams:nil 
+                     andMethod:RKRequestMethodGET 
+     andDidLoadObjectsCallback:[self standardOnDidLoadPostsBlockWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
 }
 
 
@@ -545,14 +601,15 @@ blogAvatarSizes = _blogAvatarSizes;
     if (size) {
         blogInfoURLString = [blogInfoURLString stringByAppendingFormat:@"%@", [self.blogAvatarSizes objectAtIndex:size]];
     }
-    [self.objectManager loadObjectsAtResourcePath:blogInfoURLString usingBlock:^(RKObjectLoader *loader){
-        // This time we'll get a response with the needed url in body
-        // and status code 301. It will be a redirect to that url.
-        // We don't want to follow it. We just need the url.
-        loader.followRedirect = NO;
-        loader.onDidLoadObjects = [self standardOnDidLoadBlogAvatarURLStringBlockWithDelegate:delegate];
-        loader.onDidFailWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
-    }];
+    // This time we'll get a response with the needed url in body
+    // and status code 301. It will be a redirect to that url.
+    // We don't want to follow it. We just need the url.
+    [self callAPIWithURLString:blogInfoURLString 
+                     andParams:nil 
+                     andMethod:RKRequestMethodGET 
+     andDidLoadObjectsCallback:[self standardOnDidLoadBlogAvatarURLStringBlockWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:^(RKObjectLoader *loader){loader.followRedirect = NO;}];
 }
 
 @end
