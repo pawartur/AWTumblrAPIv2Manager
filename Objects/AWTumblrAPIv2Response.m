@@ -20,8 +20,19 @@
 
 #import "AWTumblrAPIv2Response.h"
 
+static RKObjectMapping *mapping;
+
 @implementation AWTumblrAPIv2Response
 
 @synthesize meta = _meta, response = _response;
+
++(RKObjectMapping *)mapping{
+    if (!mapping) {
+        mapping = [RKObjectMapping mappingForClass:[AWTumblrAPIv2Response class]];
+        [mapping mapKeyPath:@"meta" toAttribute:@"meta"];
+        [mapping mapKeyPath:@"response" toAttribute:@"response"];
+    }
+    return mapping;
+}
 
 @end

@@ -36,11 +36,13 @@
 -(void)callAPIWithURLString:(NSString *)urlString andParams:(NSDictionary *)params andMethod:(RKRequestMethod)method andDidLoadObjectsCallback:(RKObjectLoaderDidLoadObjectsBlock)successCallback andDidFailWithErrorCallback:(RKObjectLoaderDidFailWithErrorBlock)errorCallback andPreRequestCallback:(RKObjectLoaderBlock)preRequestCallback;
 
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadObjectsBlockWithBlock:(AWTumblrAPIv2ManagerDidLoadResponse)callback;
--(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey;
+-(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey orExtraSelectorParam:(id)extraSelectorParam;
 
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadUserInfoBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadLikedPostsInfoWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadFollowedBlogsInfoWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidFollowBlogBlockWithBlogURLString:(NSString *)blogURLString andDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidUnfollowBlogBlockWithBlogURLString:(NSString *)blogURLString andDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadPostsBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectBlock)standardOnDidLoadBlogFollowersBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 
@@ -81,16 +83,9 @@ blogAvatarSizes = _blogAvatarSizes;
         
         RKObjectManager *objectManager = [RKObjectManager managerWithBaseURLString:@"http://api.tumblr.com/v2/"];
         
-        RKObjectMapping *apiResponseMapping = [RKObjectMapping mappingForClass:[AWTumblrAPIv2Response class]];
+        [objectManager.mappingProvider setMapping:[AWTumblrAPIv2Response mapping] forKeyPath:@""];
         
-        [apiResponseMapping mapKeyPath:@"meta" toAttribute:@"meta"];
-        [apiResponseMapping mapKeyPath:@"response" toAttribute:@"response"];
-        [objectManager.mappingProvider setMapping:apiResponseMapping forKeyPath:@""];
-        
-        RKObjectMapping *apiErrorResponseMapping = [RKObjectMapping mappingForClass:[AWTumblrAPIv2ErrorResponse class]];
-        [apiErrorResponseMapping mapKeyPath:@"meta" toAttribute:@"meta"];
-        [apiErrorResponseMapping mapKeyPath:@"response" toAttribute:@"response"];
-        [objectManager.mappingProvider setErrorMapping:apiErrorResponseMapping];
+        [objectManager.mappingProvider setErrorMapping:[AWTumblrAPIv2FlatResponse mapping]];
         
         [RKObjectManager setSharedManager:objectManager];
         manager.objectManager = objectManager;
@@ -196,7 +191,7 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
--(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey{
+-(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey orExtraSelectorParam:(id)extraSelectorParam{
     AWTumblrAPIv2ManagerDidLoadResponse block = ^(AWTumblrAPIv2Response *apiResponse){
         // This is our standard way of interacting with AWTumblrAPIv2Response objects
         
@@ -210,6 +205,9 @@ blogAvatarSizes = _blogAvatarSizes;
             if (responseKey) {
                 // If we want value for some specific key in apiResponse.response, we get it here...
                 param = [apiResponse.response valueForKey:responseKey];
+            }else if(extraSelectorParam){
+                // If we don't want any specific key, maybe we have some extra param to give to selector...
+                param = extraSelectorParam;
             }else{
                 // ... otherwire we will just pass the apiResponse.response itself as the parameter
                 // of the provided selector on our delegate
@@ -243,7 +241,8 @@ blogAvatarSizes = _blogAvatarSizes;
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
                                                                               andExpectedStatusCode:expectedStatusCode
-                                                                                        andKeyToGet:responseKeyToGet];
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:nil];
     
     return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
@@ -257,7 +256,8 @@ blogAvatarSizes = _blogAvatarSizes;
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
                                                                               andExpectedStatusCode:expectedStatusCode
-                                                                                        andKeyToGet:responseKeyToGet];
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:nil];
     
     return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
@@ -271,7 +271,38 @@ blogAvatarSizes = _blogAvatarSizes;
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
                                                                               andExpectedStatusCode:expectedStatusCode
-                                                                                        andKeyToGet:responseKeyToGet];
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:nil];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
+}
+
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidFollowBlogBlockWithBlogURLString:(NSString *)blogURLString andDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didFollowBlogWithURLString:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = nil;
+    
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:blogURLString];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
+}
+
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidUnfollowBlogBlockWithBlogURLString:(NSString *)blogURLString andDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didUnfollowBlogWithURLString:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = nil;
+    
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:blogURLString];
     
     return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
@@ -285,7 +316,8 @@ blogAvatarSizes = _blogAvatarSizes;
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
                                                                               andExpectedStatusCode:expectedStatusCode
-                                                                                        andKeyToGet:responseKeyToGet];
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:nil];
     
     return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
@@ -299,7 +331,8 @@ blogAvatarSizes = _blogAvatarSizes;
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
                                                                               andExpectedStatusCode:expectedStatusCode
-                                                                                        andKeyToGet:responseKeyToGet];
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:nil];
     
     return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
@@ -313,7 +346,8 @@ blogAvatarSizes = _blogAvatarSizes;
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
                                                                               andExpectedStatusCode:expectedStatusCode
-                                                                                        andKeyToGet:responseKeyToGet];
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:nil];
     
     return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
@@ -327,7 +361,8 @@ blogAvatarSizes = _blogAvatarSizes;
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
                                                                               andExpectedStatusCode:expectedStatusCode
-                                                                                        andKeyToGet:responseKeyToGet];
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:nil];
     
     return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
@@ -341,7 +376,8 @@ blogAvatarSizes = _blogAvatarSizes;
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
                                                                               andExpectedStatusCode:expectedStatusCode
-                                                                                        andKeyToGet:responseKeyToGet];
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:nil];
     
     return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
@@ -355,7 +391,8 @@ blogAvatarSizes = _blogAvatarSizes;
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
                                                                               andExpectedStatusCode:expectedStatusCode
-                                                                                        andKeyToGet:responseKeyToGet];
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:nil];
     
     return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
@@ -369,7 +406,8 @@ blogAvatarSizes = _blogAvatarSizes;
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
                                                                               andExpectedStatusCode:expectedStatusCode
-                                                                                        andKeyToGet:responseKeyToGet];
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:nil];
     
     return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
@@ -547,7 +585,42 @@ blogAvatarSizes = _blogAvatarSizes;
      andDidLoadObjectsCallback:[self standardOnDidLoadFollowedBlogsInfoWithDelegate:delegate] 
    andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
          andPreRequestCallback:nil];
+}
 
+
+-(void)followBlogWithURLString:(NSString *)blogURLString delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:@"url", blogURLString, nil];
+    // Prepare base URL string
+    NSString *followBlogURLString = @"/user/follow";
+    
+    // Make the request
+    [self callAPIWithURLString:followBlogURLString
+                     andParams:params 
+                     andMethod:RKRequestMethodPOST
+     andDidLoadObjectsCallback:[self standardOnDidFollowBlogBlockWithBlogURLString:blogURLString 
+                                                                       andDelegate:delegate]
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:^(RKObjectLoader *loader){
+             loader.objectMapping = [AWTumblrAPIv2FlatResponse mapping];
+         }];
+}
+
+
+-(void)unfollowBlogWithURLString:(NSString *)blogURLString delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:@"url", blogURLString, nil];
+    // Prepare base URL string
+    NSString *unfollowBlogURLString = @"/user/unfollow";
+    
+    // Make the request
+    [self callAPIWithURLString:unfollowBlogURLString
+                     andParams:params 
+                     andMethod:RKRequestMethodPOST
+     andDidLoadObjectsCallback:[self standardOnDidUnfollowBlogBlockWithBlogURLString:blogURLString                                                                     
+                                                                         andDelegate:delegate]
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:^(RKObjectLoader *loader){
+             loader.objectMapping = [AWTumblrAPIv2FlatResponse mapping];
+         }];
 }
 
 

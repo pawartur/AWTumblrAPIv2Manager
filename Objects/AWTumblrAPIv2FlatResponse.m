@@ -1,8 +1,8 @@
 //
-//  AWTumblrAPIv2Response.h
-//  TumblrAPIV2Manager
+//  AWTumblrAPIv2FlatResponse.m
+//  iPhoneTumblrAPIV2Manager
 //
-//  Created by Artur Wdowiarski on 6/29/12.
+//  Created by Artur Wdowiarski on 7/4/12.
 //  Copyright (c) 2012 Artur Wdowiarski. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,14 +18,22 @@
 //  limitations under the License.
 //
 
-#import <Foundation/Foundation.h>
-#import <RestKit/RestKit.h>
 
-@interface AWTumblrAPIv2Response : NSObject
+#import "AWTumblrAPIv2FlatResponse.h"
 
-@property(nonatomic, strong) NSDictionary *meta;
-@property(nonatomic, strong) NSDictionary *response;
+static RKObjectMapping *mapping;
 
-+(RKObjectMapping *)mapping;
+@implementation AWTumblrAPIv2FlatResponse
+
+@synthesize meta = _meta, response = _response;
+
++(RKObjectMapping *)mapping{
+    if (!mapping) {
+        mapping = [RKObjectMapping mappingForClass:[AWTumblrAPIv2FlatResponse class]];
+        [mapping mapKeyPath:@"meta" toAttribute:@"meta"];
+        [mapping mapKeyPath:@"response" toAttribute:@"response"];
+    }
+    return mapping;
+}
 
 @end
