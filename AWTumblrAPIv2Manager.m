@@ -39,6 +39,8 @@
 -(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey;
 
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadUserInfoBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadLikedPostsInfoWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadFollowedBlogsInfoWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadPostsBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectBlock)standardOnDidLoadBlogFollowersBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 
@@ -237,6 +239,34 @@ blogAvatarSizes = _blogAvatarSizes;
     SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadUserInfo:);
     NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
     NSString *responseKeyToGet = @"user";
+    
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
+}
+
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadLikedPostsInfoWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadLikedPostsInfo:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = nil;
+    
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet];
+    
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
+}
+
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadFollowedBlogsInfoWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadFollowedBlogsInfo:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = nil;
     
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
@@ -476,11 +506,48 @@ blogAvatarSizes = _blogAvatarSizes;
     
     // Make the request
     [self callAPIWithURLString:[dashboardURLString stringByAppendingQueryParameters:queryParams] 
-                     andParams:queryParams 
+                     andParams:nil 
                      andMethod:RKRequestMethodGET 
      andDidLoadObjectsCallback:[self standardOnDidLoadPostsBlockWithDelegate:delegate] 
    andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
          andPreRequestCallback:nil];
+}
+
+
+-(void)requestPostsLikedByUserWithLimit:(NSNumber *)limit andOffset:(NSNumber *)offset delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    NSMutableDictionary *queryParams = [NSMutableDictionary dictionaryWithCapacity:2];
+    if (limit)[queryParams setObject:limit forKey:@"limit"];
+    if (offset)[queryParams setObject:offset forKey:@"offset"];
+    
+    // Prepare base URL string
+    NSString *likedPostsURLString = @"/user/likes";
+    
+    // Make the request
+    [self callAPIWithURLString:[likedPostsURLString stringByAppendingQueryParameters:queryParams] 
+                     andParams:nil 
+                     andMethod:RKRequestMethodGET 
+     andDidLoadObjectsCallback:[self standardOnDidLoadLikedPostsInfoWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
+}
+
+
+-(void)requestBlogsFollowedByUserWithLimit:(NSNumber *)limit andOffset:(NSNumber *)offset delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    NSMutableDictionary *queryParams = [NSMutableDictionary dictionaryWithCapacity:2];
+    if (limit)[queryParams setObject:limit forKey:@"limit"];
+    if (offset)[queryParams setObject:offset forKey:@"offset"];
+    
+    // Prepare base URL string
+    NSString *followedBlogsURLString = @"/user/following";
+    
+    // Make the request
+    [self callAPIWithURLString:[followedBlogsURLString stringByAppendingQueryParameters:queryParams] 
+                     andParams:nil 
+                     andMethod:RKRequestMethodGET 
+     andDidLoadObjectsCallback:[self standardOnDidLoadFollowedBlogsInfoWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
+
 }
 
 
