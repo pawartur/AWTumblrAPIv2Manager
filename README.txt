@@ -5,13 +5,15 @@ would be sufficient to use the manager.
 It requires RestKit 0.10.0.
 
 It currently supports (see the manager's header file for details):
-- authentications via XAuth!
+- authentication via XAuth!
 - /user/info
 - /user/dashboard
 - /user/likes
 - /user/following
 - /user/follow
 - /user/unfollow
+- /user/like
+- /user/unlike
 - /blog/{base-hostname}/post (creating posts with type="text" only, for now)
 - /blog/{base-hostname}/post/edit (editing posts with type="text" only, for now)
 - /blog/{base-hostname}/delete

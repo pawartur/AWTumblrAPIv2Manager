@@ -43,6 +43,8 @@
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadFollowedBlogsInfoWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidFollowBlogBlockWithBlogURLString:(NSString *)blogURLString andDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidUnfollowBlogBlockWithBlogURLString:(NSString *)blogURLString andDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLikePostBlockWithPostId:(NSNumber *)postId andDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidUnlikePostBlockWithPostId:(NSNumber *)postId andDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadPostsBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(RKObjectLoaderDidLoadObjectBlock)standardOnDidLoadBlogFollowersBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 
@@ -304,6 +306,34 @@ blogAvatarSizes = _blogAvatarSizes;
                                                                                         andKeyToGet:responseKeyToGet 
                                                                                orExtraSelectorParam:blogURLString];
     
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
+}
+
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLikePostBlockWithPostId:(NSNumber *)postId andDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didLikePostWithId:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = nil;
+    
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:postId];
+    return [self standardOnDidLoadObjectsBlockWithBlock:block];
+}
+
+
+-(RKObjectLoaderDidLoadObjectsBlock)standardOnDidUnlikePostBlockWithPostId:(NSNumber *)postId andDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didUnlikePostWithId:);
+    NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
+    NSString *responseKeyToGet = nil;
+    
+    AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
+                                                                                        andSelector:delegateSelector
+                                                                              andExpectedStatusCode:expectedStatusCode
+                                                                                        andKeyToGet:responseKeyToGet 
+                                                                               orExtraSelectorParam:postId];
     return [self standardOnDidLoadObjectsBlockWithBlock:block];
 }
 
@@ -617,6 +647,46 @@ blogAvatarSizes = _blogAvatarSizes;
                      andMethod:RKRequestMethodPOST
      andDidLoadObjectsCallback:[self standardOnDidUnfollowBlogBlockWithBlogURLString:blogURLString                                                                     
                                                                          andDelegate:delegate]
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:^(RKObjectLoader *loader){
+             loader.objectMapping = [AWTumblrAPIv2FlatResponse mapping];
+         }];
+}
+
+
+-(void)likePostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:
+                            @"id", postId,
+                            @"reblog_key", reblogKey,
+                            nil];
+    // Prepare base URL string
+    NSString *likePostURLString = @"/user/like";
+    
+    // Make the request
+    [self callAPIWithURLString:likePostURLString
+                     andParams:params 
+                     andMethod:RKRequestMethodPOST
+     andDidLoadObjectsCallback:[self standardOnDidLikePostBlockWithPostId:postId andDelegate:delegate]
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:^(RKObjectLoader *loader){
+             loader.objectMapping = [AWTumblrAPIv2FlatResponse mapping];
+         }];
+}
+
+
+-(void)unlikePostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:
+                            @"id", postId,
+                            @"reblog_key", reblogKey,
+                            nil];
+    // Prepare base URL string
+    NSString *unlikePostURLString = @"/user/unlike";
+    
+    // Make the request
+    [self callAPIWithURLString:unlikePostURLString
+                     andParams:params 
+                     andMethod:RKRequestMethodPOST
+     andDidLoadObjectsCallback:[self standardOnDidUnlikePostBlockWithPostId:postId andDelegate:delegate]
    andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
          andPreRequestCallback:^(RKObjectLoader *loader){
              loader.objectMapping = [AWTumblrAPIv2FlatResponse mapping];
