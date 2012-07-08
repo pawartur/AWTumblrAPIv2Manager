@@ -101,7 +101,7 @@ typedef void(^AWTumblrAPIv2ManagerDidLoadResponse)(AWTumblrAPIv2Response *apiRes
 # pragma mark API Call with API Key Authentication
 -(void)requestInfoAboutBlogNamed:(NSString *)blogName delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(void)requestPostsFromBlogNamed:(NSString *)blogName withLimit:(NSNumber *)limit andOffset:(NSNumber *)offset andType:(TumblrPostType)type andTag:(NSString *)tag andFilter:(TumblrPostFilter)filter delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
--(void)requestPostFromBlogNamed:(NSString *)blogName withId:(NSString *)postId delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+-(void)requestPostFromBlogNamed:(NSString *)blogName withId:(NSNumber *)postId delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 
 # pragma marga API Call without Authentication
 -(void)requestAvatarOfBlogNamed:(NSString *)blogName withSize:(TumblrBlogAvatarSize)size delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;

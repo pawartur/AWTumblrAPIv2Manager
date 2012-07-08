@@ -831,7 +831,7 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
--(void)requestPostFromBlogNamed:(NSString *)blogName withId:(NSString *)postId delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+-(void)requestPostFromBlogNamed:(NSString *)blogName withId:(NSNumber *)postId delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare params
     NSDictionary *queryParams = [NSDictionary dictionaryWithKeysAndObjects:
                                  @"id", postId,
