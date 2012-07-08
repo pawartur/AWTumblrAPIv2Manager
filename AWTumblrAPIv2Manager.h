@@ -73,11 +73,14 @@ typedef void(^AWTumblrAPIv2ManagerDidLoadResponse)(AWTumblrAPIv2Response *apiRes
 #pragma mark Class Methods
 +(AWTumblrAPIv2Manager *)sharedManager;
 
+
 # pragma mark Helpers
 -(NSDictionary *)parseTokensFromQueryString:(NSString *)query;
 
+
 # pragma mark Authentication
 -(void)requestAccessTokensWithConsumerKey:(NSString *)consumerKey andConsumerSecretKey:(NSString *)consumerSecretKey andUsername:(NSString *)username andPassword:(NSString *)password delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+
 
 # pragma mark API Call with OAuth Authentication
 -(void)requestUserInfoWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
@@ -90,8 +93,10 @@ typedef void(^AWTumblrAPIv2ManagerDidLoadResponse)(AWTumblrAPIv2Response *apiRes
 -(void)likePostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(void)unlikePostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
 -(void)createTextPostWithTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+-(void)reblogPostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey withComment:(NSString *)comment andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 -(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 -(void)deletePostWithId:(NSNumber *)postId inBlogWithName:(NSString *)blogName delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+
 
 # pragma mark API Call with API Key Authentication
 -(void)requestInfoAboutBlogNamed:(NSString *)blogName delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;

@@ -733,6 +733,27 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
+-(void)reblogPostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey withComment:(NSString *)comment andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    NSMutableDictionary *params = [NSMutableDictionary dictionaryWithCapacity:6];
+    [params setObject:postId forKey:@"id"];
+    [params setObject:reblogKey forKey:@"reblog_key"];
+    [params setObject:comment forKey:@"comment"];
+    [params setObject:(usesMarkdown ? @"True": @"False") forKey:@"markdown"];
+    if (state) [params setObject:[self.postStates objectAtIndex:state] forKey:@"state"];
+    if (tags) [params setObject:[tags componentsJoinedByString:@","] forKey:@"tags"];
+    
+    // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
+    // so the params must be both in the urlString and in the request's params
+    NSString *reblogPostURLString = [NSString stringWithFormat:@"/blog/%@/post/reblog", [self hostNameForBlogNamed:blogName]];   
+    [self callAPIWithURLString:[reblogPostURLString stringByAppendingQueryParameters:params] 
+                     andParams:params 
+                     andMethod:RKRequestMethodPOST 
+     andDidLoadObjectsCallback:[self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate] 
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:nil];
+}
+
+
 -(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare POST params
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithCapacity:7];
