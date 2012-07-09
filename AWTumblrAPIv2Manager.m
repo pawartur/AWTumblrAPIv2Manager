@@ -54,6 +54,32 @@ NSString * const kRelativeEditPostURLStringFormat = @"/blog/%@/post/edit";
 NSString * const kRelativeDeletePostURLStringFormat = @"/blog/%@/post/delete";
 
 
+#pragma mark Request Params Names
+NSString * const kXAuthUsernameParamName = @"x_auth_username";
+NSString * const kXAuthPasswordParamName = @"x_auth_password";
+NSString * const kXAuthModeParamName = @"x_auth_mode";
+NSString * const kAPIKeyParamName = @"api_key";
+
+NSString * const kLimitParamName = @"limit";
+NSString * const kOffsetParamName = @"offset";
+NSString * const kSinceParamName = @"since";
+
+NSString * const kBlogURLParamName = @"url";
+
+NSString * const kPostIdParamName = @"id";
+NSString * const kPostReblogKeyParamName = @"reblog_key";
+NSString * const kPostTypeParamName = @"type";
+NSString * const kPostTitleParamName = @"title";
+NSString * const kPostBodyParamName = @"body";
+NSString * const kPostStateParamName = @"state";
+NSString * const kPostTagsParamName = @"tags";
+NSString * const kPostAllowsMarkdownParamName = @"markdown";
+NSString * const kPostCommentParamName = @"comment";
+
+NSString * const kPostTagParamName = @"tag";
+NSString * const kPostFilterParamName = @"filter";
+
+
 @interface AWTumblrAPIv2Manager()
 
 @property(nonatomic, strong) NSArray *postTypes;
@@ -510,10 +536,10 @@ blogAvatarSizes = _blogAvatarSizes;
     [RKObjectManager setSharedManager:objectManager];
     
     // Prepare the XAuth params
-    NSDictionary *params = [NSDictionary dictionaryWithObjectsAndKeys:
-                            username, @"x_auth_username",
-                            password, @"x_auth_password",
-                            @"client_auth", @"x_auth_mode",
+    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:
+                            kXAuthUsernameParamName, username, 
+                            kXAuthPasswordParamName, password, 
+                            kXAuthModeParamName, @"client_auth", 
                             nil];
     
     // Use CGOauth to get a request with properly set headers for our XAuth authentication
@@ -593,10 +619,10 @@ blogAvatarSizes = _blogAvatarSizes;
 -(void)requestDashboardWithLimit:(NSNumber *)limit andOffset:(NSNumber *)offset andType:(TumblrPostType)type since:(NSNumber *)since delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare params
     NSMutableDictionary *queryParams = [NSMutableDictionary dictionaryWithCapacity:4];
-    if (limit)[queryParams setObject:limit forKey:@"limit"];
-    if (offset)[queryParams setObject:offset forKey:@"offset"];
-    if (type)[queryParams setObject:[self.postTypes objectAtIndex:type] forKey:@"type"];
-    if (since)[queryParams setObject:since forKey:@"since"];
+    if (limit)[queryParams setObject:limit forKey:kLimitParamName];
+    if (offset)[queryParams setObject:offset forKey:kOffsetParamName];
+    if (type)[queryParams setObject:[self.postTypes objectAtIndex:type] forKey:kPostTypeParamName];
+    if (since)[queryParams setObject:since forKey:kSinceParamName];
     
     // Prepare base URL string
     NSString *dashboardURLString = kRelativeUserDashboardURLString;
@@ -613,8 +639,8 @@ blogAvatarSizes = _blogAvatarSizes;
 
 -(void)requestPostsLikedByUserWithLimit:(NSNumber *)limit andOffset:(NSNumber *)offset delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     NSMutableDictionary *queryParams = [NSMutableDictionary dictionaryWithCapacity:2];
-    if (limit)[queryParams setObject:limit forKey:@"limit"];
-    if (offset)[queryParams setObject:offset forKey:@"offset"];
+    if (limit)[queryParams setObject:limit forKey:kLimitParamName];
+    if (offset)[queryParams setObject:offset forKey:kOffsetParamName];
     
     // Prepare base URL string
     NSString *likedPostsURLString = kRelativeUserLikesURLString;
@@ -631,8 +657,8 @@ blogAvatarSizes = _blogAvatarSizes;
 
 -(void)requestBlogsFollowedByUserWithLimit:(NSNumber *)limit andOffset:(NSNumber *)offset delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     NSMutableDictionary *queryParams = [NSMutableDictionary dictionaryWithCapacity:2];
-    if (limit)[queryParams setObject:limit forKey:@"limit"];
-    if (offset)[queryParams setObject:offset forKey:@"offset"];
+    if (limit)[queryParams setObject:limit forKey:kLimitParamName];
+    if (offset)[queryParams setObject:offset forKey:kOffsetParamName];
     
     // Prepare base URL string
     NSString *followedBlogsURLString = kRelativeUserFollowingURLString;
@@ -648,7 +674,7 @@ blogAvatarSizes = _blogAvatarSizes;
 
 
 -(void)followBlogWithURLString:(NSString *)blogURLString delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:@"url", blogURLString, nil];
+    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:kBlogURLParamName, blogURLString, nil];
     // Prepare base URL string
     NSString *followBlogURLString = kRelativeUserFollowURLString;
     
@@ -666,7 +692,7 @@ blogAvatarSizes = _blogAvatarSizes;
 
 
 -(void)unfollowBlogWithURLString:(NSString *)blogURLString delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:@"url", blogURLString, nil];
+    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:kBlogURLParamName, blogURLString, nil];
     // Prepare base URL string
     NSString *unfollowBlogURLString = kRelativeUserUnfollowURLString;
     
@@ -685,8 +711,8 @@ blogAvatarSizes = _blogAvatarSizes;
 
 -(void)likePostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:
-                            @"id", postId,
-                            @"reblog_key", reblogKey,
+                            kPostIdParamName, postId,
+                            kPostReblogKeyParamName, reblogKey,
                             nil];
     // Prepare base URL string
     NSString *likePostURLString = kRelativeUserLikeURLString;
@@ -705,8 +731,8 @@ blogAvatarSizes = _blogAvatarSizes;
 
 -(void)unlikePostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:
-                            @"id", postId,
-                            @"reblog_key", reblogKey,
+                            kPostIdParamName, postId,
+                            kPostReblogKeyParamName, reblogKey,
                             nil];
     // Prepare base URL string
     NSString *unlikePostURLString = kRelativeUserUnlikeURLString;
@@ -726,8 +752,8 @@ blogAvatarSizes = _blogAvatarSizes;
 -(void)requestFollowersForBlogWithName:(NSString *)blogName andLimit:(NSNumber *)limit andOffset:(NSNumber *)offset delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare params
     NSMutableDictionary *queryParams = [NSMutableDictionary dictionaryWithCapacity:2];
-    if (limit)[queryParams setObject:limit forKey:@"limit"];
-    if (offset)[queryParams setObject:offset forKey:@"offset"];
+    if (limit)[queryParams setObject:limit forKey:kLimitParamName];
+    if (offset)[queryParams setObject:offset forKey:kOffsetParamName];
 
     // Prepare base URL string
     NSString *blogFollowersURLString = [NSString stringWithFormat:kRelativeBlogFollowersURLStringFormat, [self hostNameForBlogNamed:blogName]];
@@ -743,12 +769,12 @@ blogAvatarSizes = _blogAvatarSizes;
 -(void)createTextPostWithTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare POST params
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithCapacity:6];
-    [params setObject:@"text" forKey:@"type"];
-    [params setObject:title forKey:@"title"];
-    [params setObject:body forKey:@"body"];
-    [params setObject:(usesMarkdown ? @"True": @"False") forKey:@"markdown"];
-    if (state) [params setObject:[self.postStates objectAtIndex:state] forKey:@"state"];
-    if (tags) [params setObject:[tags componentsJoinedByString:@","] forKey:@"tags"];
+    [params setObject:@"text" forKey:kPostTypeParamName];
+    [params setObject:title forKey:kPostTitleParamName];
+    [params setObject:body forKey:kPostBodyParamName];
+    [params setObject:(usesMarkdown ? @"True": @"False") forKey:kPostAllowsMarkdownParamName];
+    if (state) [params setObject:[self.postStates objectAtIndex:state] forKey:kPostStateParamName];
+    if (tags) [params setObject:[tags componentsJoinedByString:@","] forKey:kPostTagsParamName];
     
     // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
     // so the params must be both in the urlString and in the request's params
@@ -764,12 +790,12 @@ blogAvatarSizes = _blogAvatarSizes;
 
 -(void)reblogPostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey withComment:(NSString *)comment andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithCapacity:6];
-    [params setObject:postId forKey:@"id"];
-    [params setObject:reblogKey forKey:@"reblog_key"];
-    [params setObject:comment forKey:@"comment"];
-    [params setObject:(usesMarkdown ? @"True": @"False") forKey:@"markdown"];
-    if (state) [params setObject:[self.postStates objectAtIndex:state] forKey:@"state"];
-    if (tags) [params setObject:[tags componentsJoinedByString:@","] forKey:@"tags"];
+    [params setObject:postId forKey:kPostIdParamName];
+    [params setObject:reblogKey forKey:kPostReblogKeyParamName];
+    [params setObject:comment forKey:kPostCommentParamName];
+    [params setObject:(usesMarkdown ? @"True": @"False") forKey:kPostAllowsMarkdownParamName];
+    if (state) [params setObject:[self.postStates objectAtIndex:state] forKey:kPostStateParamName];
+    if (tags) [params setObject:[tags componentsJoinedByString:@","] forKey:kPostTagsParamName];
     
     // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
     // so the params must be both in the urlString and in the request's params
@@ -786,13 +812,13 @@ blogAvatarSizes = _blogAvatarSizes;
 -(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare POST params
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithCapacity:7];
-    [params setObject:@"text" forKey:@"type"];
-    [params setObject:postId forKey:@"id"];
-    [params setObject:title forKey:@"title"];
-    [params setObject:body forKey:@"body"];
-    [params setObject:(usesMarkdown ? @"True": @"False") forKey:@"markdown"];
-    if (state) [params setObject:[self.postStates objectAtIndex:state] forKey:@"state"];
-    if (tags) [params setObject:[tags componentsJoinedByString:@","] forKey:@"tags"];
+    [params setObject:@"text" forKey:kPostTypeParamName];
+    [params setObject:postId forKey:kPostIdParamName];
+    [params setObject:title forKey:kPostTitleParamName];
+    [params setObject:body forKey:kPostBodyParamName];
+    [params setObject:(usesMarkdown ? @"True": @"False") forKey:kPostAllowsMarkdownParamName];
+    if (state) [params setObject:[self.postStates objectAtIndex:state] forKey:kPostStateParamName];
+    if (tags) [params setObject:[tags componentsJoinedByString:@","] forKey:kPostTagsParamName];
     
     // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
     // so the params must be both in the urlString and in the request's params
@@ -808,7 +834,9 @@ blogAvatarSizes = _blogAvatarSizes;
 
 -(void)deletePostWithId:(NSNumber *)postId inBlogWithName:(NSString *)blogName delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare POST params
-    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:@"id", postId, nil];
+    NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:
+                            kPostIdParamName, postId, 
+                            nil];
     
     NSString *deletePostURLString = [NSString stringWithFormat:kRelativeDeletePostURLStringFormat, [self hostNameForBlogNamed:blogName]];
     [self callAPIWithURLString:deletePostURLString 
@@ -824,7 +852,7 @@ blogAvatarSizes = _blogAvatarSizes;
 -(void)requestInfoAboutBlogNamed:(NSString *)blogName delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Add the api_key param, since we're not authenticating with oauth in this case
     NSDictionary *queryParams = [NSDictionary dictionaryWithKeysAndObjects:
-                                 @"api_key", self.objectManager.client.OAuth1ConsumerKey,
+                                 kAPIKeyParamName, self.objectManager.client.OAuth1ConsumerKey,
                                  nil];
     
     // Make the request
@@ -841,13 +869,13 @@ blogAvatarSizes = _blogAvatarSizes;
 -(void)requestPostsFromBlogNamed:(NSString *)blogName withLimit:(NSNumber *)limit andOffset:(NSNumber *)offset andType:(TumblrPostType)type andTag:(NSString *)tag andFilter:(TumblrPostFilter)filter delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare params
     NSMutableDictionary *queryParams = [NSMutableDictionary dictionaryWithCapacity:6];
-    if (limit)[queryParams setObject:limit forKey:@"limit"];
-    if (offset)[queryParams setObject:offset forKey:@"offset"];
-    if (type)[queryParams setObject:[self.postTypes objectAtIndex:type] forKey:@"type"];
-    if (tag)[queryParams setObject:tag forKey:@"tag"];
-    if (filter)[queryParams setObject:[self.postFilters objectAtIndex:type] forKey:@"filter"];
+    if (limit)[queryParams setObject:limit forKey:kLimitParamName];
+    if (offset)[queryParams setObject:offset forKey:kOffsetParamName];
+    if (type)[queryParams setObject:[self.postTypes objectAtIndex:type] forKey:kPostTypeParamName];
+    if (tag)[queryParams setObject:tag forKey:kPostTagParamName];
+    if (filter)[queryParams setObject:[self.postFilters objectAtIndex:type] forKey:kPostFilterParamName];
     // Also add the api_key param, since we're not authenticating with oauth in this case
-    [queryParams setObject:self.objectManager.client.OAuth1ConsumerKey forKey:@"api_key"];
+    [queryParams setObject:self.objectManager.client.OAuth1ConsumerKey forKey:kAPIKeyParamName];
     
     // Make the request
     NSString *postsURLString = [NSString stringWithFormat:kRelativeBlogPostsURLStringFormat, [self hostNameForBlogNamed:blogName]];
@@ -863,8 +891,8 @@ blogAvatarSizes = _blogAvatarSizes;
 -(void)requestPostFromBlogNamed:(NSString *)blogName withId:(NSNumber *)postId delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare params
     NSDictionary *queryParams = [NSDictionary dictionaryWithKeysAndObjects:
-                                 @"id", postId,
-                                 @"api_key", self.objectManager.client.OAuth1ConsumerKey,
+                                 kPostIdParamName, postId,
+                                 kAPIKeyParamName, self.objectManager.client.OAuth1ConsumerKey,
                                  nil];
     // Make the request
     NSString *postsURLString = [NSString stringWithFormat:kRelativeBlogPostsURLStringFormat, [self hostNameForBlogNamed:blogName]];
