@@ -383,7 +383,7 @@ blogAvatarSizes = _blogAvatarSizes;
 
 
 -(RKObjectLoaderDidLoadObjectBlock)standardOnDidLoadBlogFollowersBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    SEL delegateSelector = @selector(tumblrAPIv2Manager:didBlogFollowersInfo:);
+    SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadBlogFollowersInfo:);
     NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
     NSString *responseKeyToGet = nil;
     
