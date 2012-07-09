@@ -25,6 +25,35 @@
 #import "AWTumblrAPIv2Response.h"
 
 
+#pragma mark URL Strings
+NSString * const kBaseAPIv2URLString = @"http://api.tumblr.com/v2/";
+
+NSString * const kBaseXAuthAuthorizationURLString = @"https://www.tumblr.com/";
+NSString * const kRelativeAccessTokenURLString = @"/oauth/access_token";
+
+NSString * const kRelativeUserInfoURLString = @"/user/info";
+
+NSString * const kRelativeUserDashboardURLString = @"/user/dashboard";
+
+NSString * const kRelativeUserLikesURLString = @"/user/likes";
+NSString * const kRelativeUserLikeURLString = @"/user/like";
+NSString * const kRelativeUserUnlikeURLString = @"/user/unlike";
+
+NSString * const kRelativeUserFollowingURLString = @"/user/following";
+NSString * const kRelativeUserFollowURLString = @"/user/follow";
+NSString * const kRelativeUserUnfollowURLString = @"/user/unfollow";
+
+NSString * const kRelativeBlogFollowersURLStringFormat = @"/blog/%@/followers";
+NSString * const kRelativeBlogInfoURLStringFormat = @"/blog/%@/info";
+NSString * const kRelativeBlogPostsURLStringFormat = @"/blog/%@/posts";
+NSString * const kRelativeBlogAvatarURLStringFormat = @"/blog/%@/avatar/";
+
+NSString * const kRelativeCreatePostURLStringFormat = @"/blog/%@/post";
+NSString * const kRelativeReblogPostURLStringFormat = @"/blog/%@/post/reblog";
+NSString * const kRelativeEditPostURLStringFormat = @"/blog/%@/post/edit";
+NSString * const kRelativeDeletePostURLStringFormat = @"/blog/%@/post/delete";
+
+
 @interface AWTumblrAPIv2Manager()
 
 @property(nonatomic, strong) NSArray *postTypes;
@@ -83,7 +112,7 @@ blogAvatarSizes = _blogAvatarSizes;
         //RKLogConfigureByName("RestKit/ObjectMapping", RKLogLevelTrace);
         manager = [[AWTumblrAPIv2Manager alloc] init];
         
-        RKObjectManager *objectManager = [RKObjectManager managerWithBaseURLString:@"http://api.tumblr.com/v2/"];
+        RKObjectManager *objectManager = [RKObjectManager managerWithBaseURLString:kBaseAPIv2URLString];
         
         [objectManager.mappingProvider setMapping:[AWTumblrAPIv2Response mapping] forKeyPath:@""];
         
@@ -474,10 +503,10 @@ blogAvatarSizes = _blogAvatarSizes;
 
 # pragma mark Authentication
 -(void)requestAccessTokensWithConsumerKey:(NSString *)consumerKey andConsumerSecretKey:(NSString *)consumerSecretKey andUsername:(NSString *)username andPassword:(NSString *)password delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    NSString *path = @"/oauth/access_token";
+    NSString *path = kRelativeAccessTokenURLString;
     
     // For authentication only we need a manager with different BaseUrl
-    RKObjectManager *objectManager = [RKObjectManager managerWithBaseURLString:@"https://www.tumblr.com/"];;
+    RKObjectManager *objectManager = [RKObjectManager managerWithBaseURLString:kBaseXAuthAuthorizationURLString];;
     [RKObjectManager setSharedManager:objectManager];
     
     // Prepare the XAuth params
@@ -553,7 +582,7 @@ blogAvatarSizes = _blogAvatarSizes;
 
 # pragma mark API Call with OAuth Authentication
 -(void)requestUserInfoWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    [self callAPIWithURLString:@"/user/info" 
+    [self callAPIWithURLString:kRelativeUserInfoURLString
                      andParams:nil 
                      andMethod:RKRequestMethodPOST 
      andDidLoadObjectsCallback:[self standardOnDidLoadUserInfoBlockWithDelegate:delegate] 
@@ -570,7 +599,7 @@ blogAvatarSizes = _blogAvatarSizes;
     if (since)[queryParams setObject:since forKey:@"since"];
     
     // Prepare base URL string
-    NSString *dashboardURLString = @"/user/dashboard";
+    NSString *dashboardURLString = kRelativeUserDashboardURLString;
     
     // Make the request
     [self callAPIWithURLString:[dashboardURLString stringByAppendingQueryParameters:queryParams] 
@@ -588,7 +617,7 @@ blogAvatarSizes = _blogAvatarSizes;
     if (offset)[queryParams setObject:offset forKey:@"offset"];
     
     // Prepare base URL string
-    NSString *likedPostsURLString = @"/user/likes";
+    NSString *likedPostsURLString = kRelativeUserLikesURLString;
     
     // Make the request
     [self callAPIWithURLString:[likedPostsURLString stringByAppendingQueryParameters:queryParams] 
@@ -606,7 +635,7 @@ blogAvatarSizes = _blogAvatarSizes;
     if (offset)[queryParams setObject:offset forKey:@"offset"];
     
     // Prepare base URL string
-    NSString *followedBlogsURLString = @"/user/following";
+    NSString *followedBlogsURLString = kRelativeUserFollowingURLString;
     
     // Make the request
     [self callAPIWithURLString:[followedBlogsURLString stringByAppendingQueryParameters:queryParams] 
@@ -621,7 +650,7 @@ blogAvatarSizes = _blogAvatarSizes;
 -(void)followBlogWithURLString:(NSString *)blogURLString delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:@"url", blogURLString, nil];
     // Prepare base URL string
-    NSString *followBlogURLString = @"/user/follow";
+    NSString *followBlogURLString = kRelativeUserFollowURLString;
     
     // Make the request
     [self callAPIWithURLString:followBlogURLString
@@ -639,7 +668,7 @@ blogAvatarSizes = _blogAvatarSizes;
 -(void)unfollowBlogWithURLString:(NSString *)blogURLString delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:@"url", blogURLString, nil];
     // Prepare base URL string
-    NSString *unfollowBlogURLString = @"/user/unfollow";
+    NSString *unfollowBlogURLString = kRelativeUserUnfollowURLString;
     
     // Make the request
     [self callAPIWithURLString:unfollowBlogURLString
@@ -660,7 +689,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             @"reblog_key", reblogKey,
                             nil];
     // Prepare base URL string
-    NSString *likePostURLString = @"/user/like";
+    NSString *likePostURLString = kRelativeUserLikeURLString;
     
     // Make the request
     [self callAPIWithURLString:likePostURLString
@@ -680,7 +709,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             @"reblog_key", reblogKey,
                             nil];
     // Prepare base URL string
-    NSString *unlikePostURLString = @"/user/unlike";
+    NSString *unlikePostURLString = kRelativeUserUnlikeURLString;
     
     // Make the request
     [self callAPIWithURLString:unlikePostURLString
@@ -701,7 +730,7 @@ blogAvatarSizes = _blogAvatarSizes;
     if (offset)[queryParams setObject:offset forKey:@"offset"];
 
     // Prepare base URL string
-    NSString *blogFollowersURLString = [NSString stringWithFormat:@"/blog/%@/followers", [self hostNameForBlogNamed:blogName]];
+    NSString *blogFollowersURLString = [NSString stringWithFormat:kRelativeBlogFollowersURLStringFormat, [self hostNameForBlogNamed:blogName]];
     [self callAPIWithURLString:[blogFollowersURLString stringByAppendingQueryParameters:queryParams] 
                      andParams:nil 
                      andMethod:RKRequestMethodGET 
@@ -723,7 +752,7 @@ blogAvatarSizes = _blogAvatarSizes;
     
     // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
     // so the params must be both in the urlString and in the request's params
-    NSString *createPostURLString = [NSString stringWithFormat:@"/blog/%@/post", [self hostNameForBlogNamed:blogName]];   
+    NSString *createPostURLString = [NSString stringWithFormat:kRelativeCreatePostURLStringFormat, [self hostNameForBlogNamed:blogName]];   
     [self callAPIWithURLString:[createPostURLString stringByAppendingQueryParameters:params] 
                      andParams:params 
                      andMethod:RKRequestMethodPOST 
@@ -744,7 +773,7 @@ blogAvatarSizes = _blogAvatarSizes;
     
     // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
     // so the params must be both in the urlString and in the request's params
-    NSString *reblogPostURLString = [NSString stringWithFormat:@"/blog/%@/post/reblog", [self hostNameForBlogNamed:blogName]];   
+    NSString *reblogPostURLString = [NSString stringWithFormat:kRelativeReblogPostURLStringFormat, [self hostNameForBlogNamed:blogName]];   
     [self callAPIWithURLString:[reblogPostURLString stringByAppendingQueryParameters:params] 
                      andParams:params 
                      andMethod:RKRequestMethodPOST 
@@ -767,7 +796,7 @@ blogAvatarSizes = _blogAvatarSizes;
     
     // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
     // so the params must be both in the urlString and in the request's params
-    NSString *editPostURLString = [NSString stringWithFormat:@"/blog/%@/post/edit", [self hostNameForBlogNamed:blogName]];
+    NSString *editPostURLString = [NSString stringWithFormat:kRelativeEditPostURLStringFormat, [self hostNameForBlogNamed:blogName]];
     [self callAPIWithURLString:[editPostURLString stringByAppendingQueryParameters:params] 
                      andParams:params 
                      andMethod:RKRequestMethodPOST 
@@ -781,7 +810,7 @@ blogAvatarSizes = _blogAvatarSizes;
     // Prepare POST params
     NSDictionary *params = [NSDictionary dictionaryWithKeysAndObjects:@"id", postId, nil];
     
-    NSString *deletePostURLString = [NSString stringWithFormat:@"/blog/%@/post/delete", [self hostNameForBlogNamed:blogName]];
+    NSString *deletePostURLString = [NSString stringWithFormat:kRelativeDeletePostURLStringFormat, [self hostNameForBlogNamed:blogName]];
     [self callAPIWithURLString:deletePostURLString 
                      andParams:params 
                      andMethod:RKRequestMethodPOST 
@@ -799,7 +828,7 @@ blogAvatarSizes = _blogAvatarSizes;
                                  nil];
     
     // Make the request
-    NSString *blogInfoURLString = [NSString stringWithFormat:@"/blog/%@/info/", [self hostNameForBlogNamed:blogName]];
+    NSString *blogInfoURLString = [NSString stringWithFormat:kRelativeBlogInfoURLStringFormat, [self hostNameForBlogNamed:blogName]];
     [self callAPIWithURLString:[blogInfoURLString stringByAppendingQueryParameters:queryParams] 
                      andParams:nil 
                      andMethod:RKRequestMethodGET 
@@ -821,7 +850,7 @@ blogAvatarSizes = _blogAvatarSizes;
     [queryParams setObject:self.objectManager.client.OAuth1ConsumerKey forKey:@"api_key"];
     
     // Make the request
-    NSString *postsURLString = [NSString stringWithFormat:@"/blog/%@/posts/", [self hostNameForBlogNamed:blogName]];
+    NSString *postsURLString = [NSString stringWithFormat:kRelativeBlogPostsURLStringFormat, [self hostNameForBlogNamed:blogName]];
     [self callAPIWithURLString:[postsURLString stringByAppendingQueryParameters:queryParams] 
                      andParams:nil 
                      andMethod:RKRequestMethodGET 
@@ -838,7 +867,7 @@ blogAvatarSizes = _blogAvatarSizes;
                                  @"api_key", self.objectManager.client.OAuth1ConsumerKey,
                                  nil];
     // Make the request
-    NSString *postsURLString = [NSString stringWithFormat:@"/blog/%@/posts/", [self hostNameForBlogNamed:blogName]];
+    NSString *postsURLString = [NSString stringWithFormat:kRelativeBlogPostsURLStringFormat, [self hostNameForBlogNamed:blogName]];
     [self callAPIWithURLString:[postsURLString stringByAppendingQueryParameters:queryParams] 
                      andParams:nil 
                      andMethod:RKRequestMethodGET 
@@ -851,7 +880,7 @@ blogAvatarSizes = _blogAvatarSizes;
 # pragma mark API Call without Authentication
 -(void)requestAvatarOfBlogNamed:(NSString *)blogName withSize:(TumblrBlogAvatarSize)size delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Make the request
-    NSString *blogInfoURLString = [NSString stringWithFormat:@"/blog/%@/avatar/", [self hostNameForBlogNamed:blogName]];
+    NSString *blogInfoURLString = [NSString stringWithFormat:kRelativeBlogAvatarURLStringFormat, [self hostNameForBlogNamed:blogName]];
     if (size) {
         blogInfoURLString = [blogInfoURLString stringByAppendingFormat:@"%@", [self.blogAvatarSizes objectAtIndex:size]];
     }
