@@ -80,6 +80,17 @@ NSString * const kPostTagParamName = @"tag";
 NSString * const kPostFilterParamName = @"filter";
 
 
+#pragma mark Response Keys
+NSString * const kOAuthTokenResponseKey = @"oauth_token";
+NSString * const kOAuthTokenSecretResponseKey = @"oauth_token_secret";
+NSString * const kStatusResponseKey = @"status";
+NSString * const kErrorMessageResponseKey = @"msg";
+NSString * const kUserResponseKey = @"user";
+NSString * const kPostsResponseKey = @"posts";
+NSString * const kPostIdResponseKey = @"id";
+NSString * const kBlogAvatarURLResponseKey = @"avatar_url";
+
+
 @interface AWTumblrAPIv2Manager()
 
 @property(nonatomic, strong) NSArray *postTypes;
@@ -253,7 +264,7 @@ blogAvatarSizes = _blogAvatarSizes;
         // This is our standard way of interacting with AWTumblrAPIv2Response objects
         
         // First we check if we got the expected status code
-        if ([[apiResponse.meta valueForKey:@"status"] isEqualToNumber:statusCode]) {
+        if ([[apiResponse.meta valueForKey:kStatusResponseKey] isEqualToNumber:statusCode]) {
             // Then we stop, if the provided delegate doesn't respond to the provided selector
             if (![delegate respondsToSelector:selector]) {
                 return;
@@ -283,7 +294,7 @@ blogAvatarSizes = _blogAvatarSizes;
             // If we didn't get the expected status code, we just call a default error selector
             // on the delegate
             // Note: it would be better to map tumblr's error messages to something else
-            [delegate tumblrAPIv2Manager:self didReceiveErrorMessage:[apiResponse.meta valueForKey:@"msg"]];
+            [delegate tumblrAPIv2Manager:self didReceiveErrorMessage:[apiResponse.meta valueForKey:kErrorMessageResponseKey]];
         }
     };
     return block;
@@ -293,7 +304,7 @@ blogAvatarSizes = _blogAvatarSizes;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadUserInfoBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadUserInfo:);
     NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
-    NSString *responseKeyToGet = @"user";
+    NSString *responseKeyToGet = kUserResponseKey;
     
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
@@ -396,7 +407,7 @@ blogAvatarSizes = _blogAvatarSizes;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadPostsBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadPosts:);
     NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
-    NSString *responseKeyToGet = @"posts";
+    NSString *responseKeyToGet = kPostsResponseKey;
     
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
@@ -426,7 +437,7 @@ blogAvatarSizes = _blogAvatarSizes;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadCreatedPostIdBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     SEL delegateSelector = @selector(tumblrAPIv2Manager:didCreatePostWithId:);
     NSNumber *expectedStatusCode = [NSNumber numberWithInt:201];
-    NSString *responseKeyToGet = @"id";
+    NSString *responseKeyToGet = kPostIdResponseKey;
     
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
@@ -441,7 +452,7 @@ blogAvatarSizes = _blogAvatarSizes;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadEditPostIdBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{   
     SEL delegateSelector = @selector(tumblrAPIv2Manager:didEditPostWithId:);
     NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
-    NSString *responseKeyToGet = @"id";
+    NSString *responseKeyToGet = kPostIdResponseKey;
     
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
@@ -456,7 +467,7 @@ blogAvatarSizes = _blogAvatarSizes;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadDeletePostIdBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{    
     SEL delegateSelector = @selector(tumblrAPIv2Manager:didDeletePostWithId:);
     NSNumber *expectedStatusCode = [NSNumber numberWithInt:200];
-    NSString *responseKeyToGet = @"id";
+    NSString *responseKeyToGet = kPostIdResponseKey;
     
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
@@ -486,7 +497,7 @@ blogAvatarSizes = _blogAvatarSizes;
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadBlogAvatarURLStringBlockWithDelegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     SEL delegateSelector = @selector(tumblrAPIv2Manager:didLoadBlogAvatarURLString:);
     NSNumber *expectedStatusCode = [NSNumber numberWithInt:301];
-    NSString *responseKeyToGet = @"avatar_url";
+    NSString *responseKeyToGet = kBlogAvatarURLResponseKey;
     
     AWTumblrAPIv2ManagerDidLoadResponse block = [self standardOnDidLoadAPIResponseBlockWithDelegate:delegate 
                                                                                         andSelector:delegateSelector
@@ -576,9 +587,8 @@ blogAvatarSizes = _blogAvatarSizes;
     request.onDidLoadResponse = ^(RKResponse *response){
         // Get the access tokens
         NSDictionary *accessTokens = [self parseTokensFromQueryString:[response bodyAsString]];
-        NSString *accessToken = [accessTokens valueForKey:@"oauth_token"];
-        NSString *accessTokenSecret = [accessTokens valueForKey:@"oauth_token_secret"];
-        NSLog(@"Received access token %@ and access token secret %@", [accessTokens valueForKey:@"oauth_token"], [accessTokens valueForKey:@"oauth_token_secret"]);
+        NSString *accessToken = [accessTokens valueForKey:kOAuthTokenResponseKey];
+        NSString *accessTokenSecret = [accessTokens valueForKey:kOAuthTokenSecretResponseKey];
         
         // Return to shared manager with proper BaseURL
         [RKObjectManager setSharedManager:self.objectManager];
