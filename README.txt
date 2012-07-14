@@ -14,11 +14,15 @@ It currently supports (see the manager's header file for details):
 - /user/unfollow
 - /user/like
 - /user/unlike
-- /blog/{base-hostname}/post (creating posts with type "text", "quote", "link" or "photo" only, for now)
+- /blog/{base-hostname}/post
 - /blog/{base-hostname}/post/reblog
-- /blog/{base-hostname}/post/edit (editing posts with type "text", "quote", "link" or "photo" only, for now)
+- /blog/{base-hostname}/post/edit
 - /blog/{base-hostname}/delete
 - /blog/{base-hostname}/info
 - /blog/{base-hostname}/followers
 - /blog/{base-hostname}/posts
 - /blog/{base-hostname}/avatar
+
+Remaining problems:
+- creating/editing a post so that it uses markdown doesn't seem to work
+- mimetypes of images, audio files and video files are set to "image/png", "audio/mpeg" and "video/quicktime" respectively, so other types might not work.
