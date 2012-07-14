@@ -114,6 +114,10 @@ typedef void(^AWTumblrAPIv2ManagerDidLoadResponse)(AWTumblrAPIv2Response *apiRes
 
 -(void)editAudioPostWithId:(NSNumber *)postId withNewFile:(NSData *)audioData andNewCaption:(NSString *)caption andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
+-(void)createVideoPostWithFile:(NSData *)videoData andCaption:(NSString *)caption andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+
+-(void)editVideoPostWithId:(NSNumber *)postId withNewFile:(NSData *)videoData andNewCaption:(NSString *)caption andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)createQuotePostWithQuote:(NSString *)quote andCitedSource:(NSString *)source andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
 -(void)editQuotePostWithId:(NSNumber *)postId withNewQuote:(NSString *)quote andNewCitedSource:(NSString *)source andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
