@@ -825,12 +825,7 @@ blogAvatarSizes = _blogAvatarSizes;
         loader.method = RKRequestMethodPOST;
         loader.onDidLoadObjects = [self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate];
         loader.params = params;
-        loader.onDidLoadResponse = ^(RKResponse *response){
-            NSString *responseBosy = [response bodyAsString];
-            NSLog(@"Received response %@", responseBosy);
-        };
     }];
-    
 }
 
 
@@ -855,14 +850,14 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
--(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+-(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andNewBody:(NSString *)body andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare POST params
     RKParams *params = [RKParams params];
     [params setValue:[postId stringValue] forParam:kPostIdParamName];
     [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypeText] forParam:kPostTypeParamName];
-    [params setValue:title forParam:kPostTitleParamName];
-    [params setValue:body forParam:kPostBodyParamName];
     [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
+    if(title) [params setValue:title forParam:kPostTitleParamName];
+    if(body) [params setValue:body forParam:kPostBodyParamName];
     if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
     if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
     
@@ -876,6 +871,28 @@ blogAvatarSizes = _blogAvatarSizes;
      andDidLoadObjectsCallback:[self standardOnDidLoadEditPostIdBlockWithDelegate:delegate] 
    andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
          andPreRequestCallback:nil];
+}
+
+
+-(void)editPhotoPostWithId:(NSNumber *)postId withNewImage:(UIImage *)image andNewCaption:(NSString *)caption andNewLink:(NSString*)link andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    // Prepare POST params
+    RKParams *params = [RKParams params];
+    [params setValue:[postId stringValue] forParam:kPostIdParamName];
+    [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypePhoto] forParam:kPostTypeParamName];
+    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
+    if (image) [params setData:UIImagePNGRepresentation(image) MIMEType:@"image/png" forParam:@"data"];
+    if (caption) [params setValue:caption forParam:@"caption"];
+    if (link) [params setValue:link forParam:@"link"];
+    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
+    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
+    
+    NSString *editPostURLString = [NSString stringWithFormat:kRelativeEditPostURLStringFormat, [self hostNameForBlogNamed:blogName]];
+    [self.objectManager loadObjectsAtResourcePath:editPostURLString usingBlock:^(RKObjectLoader *loader){
+        loader.method = RKRequestMethodPOST;
+        loader.onDidLoadObjects = [self standardOnDidLoadEditPostIdBlockWithDelegate:delegate];
+        loader.params = params;
+    }];
+
 }
 
 

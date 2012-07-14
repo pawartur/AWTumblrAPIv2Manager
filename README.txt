@@ -16,7 +16,7 @@ It currently supports (see the manager's header file for details):
 - /user/unlike
 - /blog/{base-hostname}/post (creating posts with type "text" or "photo" only, for now)
 - /blog/{base-hostname}/post/reblog
-- /blog/{base-hostname}/post/edit (editing posts with type="text" only, for now)
+- /blog/{base-hostname}/post/edit (editing posts with type "text" or "photo" only, for now)
 - /blog/{base-hostname}/delete
 - /blog/{base-hostname}/info
 - /blog/{base-hostname}/followers

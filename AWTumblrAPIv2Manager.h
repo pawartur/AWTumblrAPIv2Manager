@@ -84,25 +84,43 @@ typedef void(^AWTumblrAPIv2ManagerDidLoadResponse)(AWTumblrAPIv2Response *apiRes
 
 # pragma mark API Call with OAuth Authentication
 -(void)requestUserInfoWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)requestDashboardWithLimit:(NSNumber *)limit andOffset:(NSNumber *)offset andType:(TumblrPostType)type since:(NSNumber *)since delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)requestPostsLikedByUserWithLimit:(NSNumber *)limit andOffset:(NSNumber *)offset delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)requestBlogsFollowedByUserWithLimit:(NSNumber *)limit andOffset:(NSNumber *)offset delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)followBlogWithURLString:(NSString *)blogURLString delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)unfollowBlogWithURLString:(NSString *)blogURLString delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)requestFollowersForBlogWithName:(NSString *)blogName andLimit:(NSNumber *)limit andOffset:(NSNumber *)offset delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)likePostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)unlikePostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)createTextPostWithTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)createPhotoPostWithImage:(UIImage *)image andCaption:(NSString *)caption andLink:(NSString *)link andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)reblogPostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey withComment:(NSString *)comment andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
--(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+
+-(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andNewBody:(NSString *)body andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+
+-(void)editPhotoPostWithId:(NSNumber *)postId withNewImage:(UIImage *)image andNewCaption:(NSString *)caption andNewLink:(NSString *)link andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)deletePostWithId:(NSNumber *)postId inBlogWithName:(NSString *)blogName delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
 
 # pragma mark API Call with API Key Authentication
 -(void)requestInfoAboutBlogNamed:(NSString *)blogName delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)requestPostsFromBlogNamed:(NSString *)blogName withLimit:(NSNumber *)limit andOffset:(NSNumber *)offset andType:(TumblrPostType)type andTag:(NSString *)tag andFilter:(TumblrPostFilter)filter delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)requestPostFromBlogNamed:(NSString *)blogName withId:(NSNumber *)postId delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
+
 
 # pragma marga API Call without Authentication
 -(void)requestAvatarOfBlogNamed:(NSString *)blogName withSize:(TumblrBlogAvatarSize)size delegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate;
