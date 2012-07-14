@@ -71,6 +71,14 @@ NSString * const kPostReblogKeyParamName = @"reblog_key";
 NSString * const kPostTypeParamName = @"type";
 NSString * const kPostTitleParamName = @"title";
 NSString * const kPostBodyParamName = @"body";
+NSString * const kPostDataParamName = @"data";
+NSString * const kPostPhotoLinkParamName = @"link";
+NSString * const kPostCaptionParamName = @"caption";
+NSString * const kPostLinkParamName = @"url";
+NSString * const kPostQuoteParamName = @"quote";
+NSString * const kPostCitedSourceParamName = @"source";
+NSString * const kPostLinkedPageTitleParamName = @"title";
+NSString * const kPostDescriptionParamName = @"description";
 NSString * const kPostStateParamName = @"state";
 NSString * const kPostTagsParamName = @"tags";
 NSString * const kPostAllowsMarkdownParamName = @"markdown";
@@ -100,6 +108,8 @@ NSString * const kBlogAvatarURLResponseKey = @"avatar_url";
 
 
 -(void)callAPIWithURLString:(NSString *)urlString andQueryParams:(NSDictionary *)queryParams andParams:(RKParams *)params andMethod:(RKRequestMethod)method andDidLoadObjectsCallback:(RKObjectLoaderDidLoadObjectsBlock)successCallback andDidFailWithErrorCallback:(RKObjectLoaderDidFailWithErrorBlock)errorCallback andPreRequestCallback:(RKObjectLoaderBlock)preRequestCallback;
+
+-(void)createOrEditPostWithId:(NSNumber *)postId type:(TumblrPostType)type reblogKey:(NSString *)reblogKey title:(NSString *)title body:(NSString *)body image:(UIImage *)image caption:(NSString *)caption photoLink:(NSString *)photoLink quote:(NSString *)quote citedSource:(NSString *)citedSource link:(NSString *)link linkedPageTitle:(NSString *)linkedPageTitle description:(NSString *)description comment:(NSString *)comment audioFile:(NSData *)audioData videoFile:(NSData *)videoData state:(TumblrPostState)state tags:(NSArray *)tags create:(BOOL)create inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown expectFlatResponse:(BOOL)expectFlatResponse delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadObjectsBlockWithBlock:(AWTumblrAPIv2ManagerDidLoadResponse)callback;
 -(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey orExtraSelectorParam:(id)extraSelectorParam;
@@ -241,6 +251,59 @@ blogAvatarSizes = _blogAvatarSizes;
             preRequestCallback(loader);
         }
     }];
+}
+
+
+-(void)createOrEditPostWithId:(NSNumber *)postId type:(TumblrPostType)type reblogKey:(NSString *)reblogKey title:(NSString *)title body:(NSString *)body image:(UIImage *)image caption:(NSString *)caption photoLink:(NSString *)photoLink quote:(NSString *)quote citedSource:(NSString *)citedSource link:(NSString *)link linkedPageTitle:(NSString *)linkedPageTitle description:(NSString *)description comment:(NSString *)comment audioFile:(NSData *)audioData videoFile:(NSData *)videoData state:(TumblrPostState)state tags:(NSArray *)tags create:(BOOL)create inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown expectFlatResponse:(BOOL)expectFlatResponse delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    // Prepare POST params
+    RKParams *params = [RKParams params];
+    [params setValue:[[self postTypes] objectAtIndex:type] forParam:kPostTypeParamName];
+    if (postId) [params setValue:[postId stringValue] forParam:kPostIdParamName];
+    if (reblogKey) [params setValue:reblogKey forParam:kPostReblogKeyParamName];
+    if (title) [params setValue:title forParam:kPostTitleParamName];
+    if (body) [params setValue:body forParam:kPostBodyParamName];
+    if (image) [params setData:UIImagePNGRepresentation(image) MIMEType:@"image/png" forParam:kPostDataParamName];
+    if (caption) [params setValue:caption forParam:kPostCaptionParamName];
+    if (photoLink) [params setValue:photoLink forParam:kPostPhotoLinkParamName];
+    if (quote) [params setValue:quote forParam:kPostQuoteParamName];
+    if (citedSource) [params setValue:citedSource forParam:kPostCitedSourceParamName];
+    if (link) [params setValue:link forParam:kPostLinkParamName];
+    if (linkedPageTitle) [params setValue:linkedPageTitle forParam:kPostLinkedPageTitleParamName];
+    if (description) [params setValue:description forParam:kPostDescriptionParamName];
+    if (comment) [params setValue:comment forParam:kPostCommentParamName];
+    if (audioData) [params setData:audioData forParam:kPostDataParamName];
+    if (videoData) [params setData:videoData forParam:kPostDataParamName];
+    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
+    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
+    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
+    
+    // Set the url and callbacks
+    NSString *urlString;
+    RKObjectLoaderDidLoadObjectsBlock successCallback;
+    RKObjectLoaderBlock preRequestCallback = nil;
+    
+    if (create) {
+        urlString = [NSString stringWithFormat:kRelativeCreatePostURLStringFormat, [self hostNameForBlogNamed:blogName]];   
+        successCallback = [self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate];
+    }else {
+        urlString = [NSString stringWithFormat:kRelativeEditPostURLStringFormat, [self hostNameForBlogNamed:blogName]];   
+        successCallback = [self standardOnDidLoadEditPostIdBlockWithDelegate:delegate];
+    }
+    
+    if (expectFlatResponse) {
+        preRequestCallback = ^(RKObjectLoader *loader){
+            loader.objectMapping = [AWTumblrAPIv2FlatResponse mapping];
+        };
+    }
+
+    // Make the request
+    [self callAPIWithURLString:urlString
+                andQueryParams:nil
+                     andParams:params 
+                     andMethod:RKRequestMethodPOST 
+     andDidLoadObjectsCallback:successCallback
+   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
+         andPreRequestCallback:preRequestCallback];
 }
 
 
@@ -799,83 +862,227 @@ blogAvatarSizes = _blogAvatarSizes;
 
 
 -(void)createTextPostWithTitle:(NSString *)title andBody:(NSString *)body andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    // Prepare POST params
-    RKParams *params = [RKParams params];
-    [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypeText] forParam:kPostTypeParamName];
-    [params setValue:title forParam:kPostTitleParamName];
-    [params setValue:body forParam:kPostBodyParamName];
-    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
-    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
-    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
-    // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
-    // so the params must be both in the urlString and in the request's params
-    NSString *createPostURLString = [NSString stringWithFormat:kRelativeCreatePostURLStringFormat, [self hostNameForBlogNamed:blogName]];   
-    [self callAPIWithURLString:createPostURLString
-                andQueryParams:nil
-                     andParams:params 
-                     andMethod:RKRequestMethodPOST 
-     andDidLoadObjectsCallback:[self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate] 
-   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
-         andPreRequestCallback:nil];
+    
+    [self createOrEditPostWithId:nil 
+                            type:TumblrPostTypeText 
+                       reblogKey:nil 
+                           title:title 
+                            body:body 
+                           image:nil 
+                         caption:nil 
+                       photoLink:nil 
+                           quote:nil 
+                     citedSource:nil 
+                            link:nil 
+                 linkedPageTitle:nil 
+                     description:nil 
+                         comment:nil 
+                       audioFile:nil 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:YES 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
+}
+
+
+-(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andNewBody:(NSString *)body andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    
+    [self createOrEditPostWithId:postId 
+                            type:TumblrPostTypeText 
+                       reblogKey:nil 
+                           title:title 
+                            body:body 
+                           image:nil 
+                         caption:nil 
+                       photoLink:nil 
+                           quote:nil 
+                     citedSource:nil 
+                            link:nil 
+                 linkedPageTitle:nil 
+                     description:nil 
+                         comment:nil 
+                       audioFile:nil 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:NO 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
+    
 }
 
 
 -(void)createPhotoPostWithImage:(UIImage *)image andCaption:(NSString *)caption andLink:(NSString *)link andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    // Prepare POST params
-    RKParams *params = [RKParams params];
-    [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypePhoto] forParam:kPostTypeParamName];
-    [params setData:UIImagePNGRepresentation(image) MIMEType:@"image/png" forParam:@"data"];
-    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
-    if (caption) [params setValue:caption forParam:@"caption"];
-    if (link) [params setValue:link forParam:@"link"];
-    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
-    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
     
-    NSString *createPostURLString = [NSString stringWithFormat:kRelativeCreatePostURLStringFormat, [self hostNameForBlogNamed:blogName]];
-    [self.objectManager loadObjectsAtResourcePath:createPostURLString usingBlock:^(RKObjectLoader *loader){
-        loader.method = RKRequestMethodPOST;
-        loader.onDidLoadObjects = [self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate];
-        loader.params = params;
-    }];
+    [self createOrEditPostWithId:nil 
+                            type:TumblrPostTypePhoto 
+                       reblogKey:nil 
+                           title:nil    
+                            body:nil 
+                           image:image 
+                         caption:caption 
+                       photoLink:link 
+                           quote:nil 
+                     citedSource:nil 
+                            link:nil 
+                 linkedPageTitle:nil 
+                     description:nil 
+                         comment:nil 
+                       audioFile:nil 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:YES 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
+}
+
+
+-(void)editPhotoPostWithId:(NSNumber *)postId withNewImage:(UIImage *)image andNewCaption:(NSString *)caption andNewLink:(NSString*)link andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    
+    [self createOrEditPostWithId:postId 
+                            type:TumblrPostTypePhoto 
+                       reblogKey:nil 
+                           title:nil    
+                            body:nil 
+                           image:image 
+                         caption:caption 
+                       photoLink:link 
+                           quote:nil 
+                     citedSource:nil 
+                            link:nil 
+                 linkedPageTitle:nil 
+                     description:nil 
+                         comment:nil 
+                       audioFile:nil 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:NO 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
 }
 
 
 -(void)createQuotePostWithQuote:(NSString *)quote andCitedSource:(NSString *)source andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    // Prepare POST params
-    RKParams *params = [RKParams params];
-    [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypeQuote] forParam:kPostTypeParamName];
-    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
-    [params setValue:quote forParam:@"quote"];
-    if (source) [params setValue:source forParam:@"source"];
-    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
-    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
     
-    NSString *createPostURLString = [NSString stringWithFormat:kRelativeCreatePostURLStringFormat, [self hostNameForBlogNamed:blogName]];
-    [self.objectManager loadObjectsAtResourcePath:createPostURLString usingBlock:^(RKObjectLoader *loader){
-        loader.method = RKRequestMethodPOST;
-        loader.onDidLoadObjects = [self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate];
-        loader.params = params;
-    }];
+    [self createOrEditPostWithId:nil 
+                            type:TumblrPostTypeQuote
+                       reblogKey:nil 
+                           title:nil    
+                            body:nil 
+                           image:nil 
+                         caption:nil 
+                       photoLink:nil 
+                           quote:quote 
+                     citedSource:source 
+                            link:nil 
+                 linkedPageTitle:nil 
+                     description:nil 
+                         comment:nil 
+                       audioFile:nil 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:YES 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
+}
+
+
+-(void)editQuotePostWithId:(NSNumber *)postId withNewQuote:(NSString *)quote andNewCitedSource:(NSString *)source andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    
+    [self createOrEditPostWithId:postId 
+                            type:TumblrPostTypeQuote
+                       reblogKey:nil 
+                           title:nil    
+                            body:nil 
+                           image:nil 
+                         caption:nil 
+                       photoLink:nil 
+                           quote:quote 
+                     citedSource:source 
+                            link:nil 
+                 linkedPageTitle:nil 
+                     description:nil 
+                         comment:nil 
+                       audioFile:nil 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:NO 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
 }
 
 
 -(void)createLinkPostWithLink:(NSString *)link andLinkedPageTitle:(NSString *)title andDescription:(NSString *)description andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    // Prepare POST params
-    RKParams *params = [RKParams params];
-    [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypeLink] forParam:kPostTypeParamName];
-    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
-    [params setValue:link forParam:@"url"];
-    if (title) [params setValue:title forParam:@"title"];
-    if (description) [params setValue:description forParam:@"description"];
-    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
-    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
     
-    NSString *createPostURLString = [NSString stringWithFormat:kRelativeCreatePostURLStringFormat, [self hostNameForBlogNamed:blogName]];
-    [self.objectManager loadObjectsAtResourcePath:createPostURLString usingBlock:^(RKObjectLoader *loader){
-        loader.method = RKRequestMethodPOST;
-        loader.onDidLoadObjects = [self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate];
-        loader.params = params;
-    }];
+    [self createOrEditPostWithId:nil 
+                            type:TumblrPostTypeLink
+                       reblogKey:nil 
+                           title:nil    
+                            body:nil 
+                           image:nil 
+                         caption:nil 
+                       photoLink:nil 
+                           quote:nil 
+                     citedSource:nil 
+                            link:link 
+                 linkedPageTitle:title 
+                     description:description 
+                         comment:nil 
+                       audioFile:nil 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:YES 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
+}
+
+
+-(void)editLinkPostWithId:(NSNumber *)postId withNewLink:(NSString *)link andNewLinkedPageTitle:(NSString *)title andNewDescription:(NSString *)description andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+
+    [self createOrEditPostWithId:postId 
+                            type:TumblrPostTypeLink
+                       reblogKey:nil 
+                           title:nil    
+                            body:nil 
+                           image:nil 
+                         caption:nil 
+                       photoLink:nil 
+                           quote:nil 
+                     citedSource:nil 
+                            link:link 
+                 linkedPageTitle:title 
+                     description:description 
+                         comment:nil 
+                       audioFile:nil 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:NO 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
 }
 
 
@@ -887,8 +1094,7 @@ blogAvatarSizes = _blogAvatarSizes;
     [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
     if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
     if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
-    // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
-    // so the params must be both in the urlString and in the request's params
+    
     NSString *reblogPostURLString = [NSString stringWithFormat:kRelativeReblogPostURLStringFormat, [self hostNameForBlogNamed:blogName]];   
     [self callAPIWithURLString:reblogPostURLString
                 andQueryParams:nil
@@ -897,94 +1103,6 @@ blogAvatarSizes = _blogAvatarSizes;
      andDidLoadObjectsCallback:[self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate] 
    andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
          andPreRequestCallback:nil];
-}
-
-
--(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andNewBody:(NSString *)body andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    // Prepare POST params
-    RKParams *params = [RKParams params];
-    [params setValue:[postId stringValue] forParam:kPostIdParamName];
-    [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypeText] forParam:kPostTypeParamName];
-    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
-    if(title) [params setValue:title forParam:kPostTitleParamName];
-    if(body) [params setValue:body forParam:kPostBodyParamName];
-    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
-    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
-    
-    // Make the request. Its Content-Type will be form-urlencoded (Tumblr doesn't support form-multipart anyway),
-    // so the params must be both in the urlString and in the request's params
-    NSString *editPostURLString = [NSString stringWithFormat:kRelativeEditPostURLStringFormat, [self hostNameForBlogNamed:blogName]];
-    [self callAPIWithURLString:editPostURLString
-                andQueryParams:nil
-                     andParams:params 
-                     andMethod:RKRequestMethodPOST 
-     andDidLoadObjectsCallback:[self standardOnDidLoadEditPostIdBlockWithDelegate:delegate] 
-   andDidFailWithErrorCallback:[self standardOnDidFailWithErrorBlockWithDelegate:delegate] 
-         andPreRequestCallback:nil];
-}
-
-
--(void)editPhotoPostWithId:(NSNumber *)postId withNewImage:(UIImage *)image andNewCaption:(NSString *)caption andNewLink:(NSString*)link andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    // Prepare POST params
-    RKParams *params = [RKParams params];
-    [params setValue:[postId stringValue] forParam:kPostIdParamName];
-    [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypePhoto] forParam:kPostTypeParamName];
-    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
-    if (image) [params setData:UIImagePNGRepresentation(image) MIMEType:@"image/png" forParam:@"data"];
-    if (caption) [params setValue:caption forParam:@"caption"];
-    if (link) [params setValue:link forParam:@"link"];
-    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
-    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
-    
-    NSString *editPostURLString = [NSString stringWithFormat:kRelativeEditPostURLStringFormat, [self hostNameForBlogNamed:blogName]];
-    [self.objectManager loadObjectsAtResourcePath:editPostURLString usingBlock:^(RKObjectLoader *loader){
-        loader.method = RKRequestMethodPOST;
-        loader.onDidLoadObjects = [self standardOnDidLoadEditPostIdBlockWithDelegate:delegate];
-        loader.params = params;
-    }];
-
-}
-
-
--(void)editQuotePostWithId:(NSNumber *)postId withNewQuote:(NSString *)quote andNewCitedSource:(NSString *)source andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    RKParams *params = [RKParams params];
-    [params setValue:[postId stringValue] forParam:kPostIdParamName];
-    [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypeQuote] forParam:kPostTypeParamName];
-    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
-    [params setValue:quote forParam:@"quote"];
-    if (source) [params setValue:source forParam:@"source"];
-    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
-    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
-    
-    NSString *editPostURLString = [NSString stringWithFormat:kRelativeEditPostURLStringFormat, [self hostNameForBlogNamed:blogName]];
-    
-    [self.objectManager loadObjectsAtResourcePath:editPostURLString usingBlock:^(RKObjectLoader *loader){
-        loader.method = RKRequestMethodPOST;
-        loader.onDidLoadObjects = [self standardOnDidLoadEditPostIdBlockWithDelegate:delegate];
-        loader.params = params;
-    }];
-}
-
-
--(void)editLinkPostWithId:(NSNumber *)postId withNewLink:(NSString *)link andNewLinkedPageTitle:(NSString *)title andNewDescription:(NSString *)description andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
-    // Prepare POST params
-    RKParams *params = [RKParams params];
-    [params setValue:[postId stringValue] forParam:kPostIdParamName];
-    [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypeLink] forParam:kPostTypeParamName];
-    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
-    [params setValue:link forParam:@"url"];
-    if (title) [params setValue:title forParam:@"title"];
-    if (description) [params setValue:description forParam:@"description"];
-    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
-    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
-    
-    NSString *editPostURLString = [NSString stringWithFormat:kRelativeEditPostURLStringFormat, [self hostNameForBlogNamed:blogName]];
-    
-    [self.objectManager loadObjectsAtResourcePath:editPostURLString usingBlock:^(RKObjectLoader *loader){
-        loader.method = RKRequestMethodPOST;
-        loader.onDidLoadObjects = [self standardOnDidLoadEditPostIdBlockWithDelegate:delegate];
-        loader.params = params;
-    }];
 }
 
 
