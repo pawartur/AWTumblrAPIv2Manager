@@ -126,6 +126,10 @@ typedef void(^AWTumblrAPIv2ManagerDidLoadResponse)(AWTumblrAPIv2Response *apiRes
 
 -(void)editLinkPostWithId:(NSNumber *)postId withNewLink:(NSString *)link andNewLinkedPageTitle:(NSString *)title andNewDescription:(NSString *)description andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
+-(void)createChatPostWithConversation:(NSString *)conversation andTitle:(NSString *)title andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+
+-(void)editChatPostWithId:(NSNumber *)postId withNewConversation:(NSString *)conversation andNewTitle:(NSString *)title andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+
 -(void)reblogPostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey withComment:(NSString *)comment andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
 -(void)deletePostWithId:(NSNumber *)postId inBlogWithName:(NSString *)blogName delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;

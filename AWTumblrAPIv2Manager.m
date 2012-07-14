@@ -79,6 +79,7 @@ NSString * const kPostQuoteParamName = @"quote";
 NSString * const kPostCitedSourceParamName = @"source";
 NSString * const kPostLinkedPageTitleParamName = @"title";
 NSString * const kPostDescriptionParamName = @"description";
+NSString * const kPostConversationParamName = @"conversation";
 NSString * const kPostStateParamName = @"state";
 NSString * const kPostTagsParamName = @"tags";
 NSString * const kPostAllowsMarkdownParamName = @"markdown";
@@ -109,7 +110,7 @@ NSString * const kBlogAvatarURLResponseKey = @"avatar_url";
 
 -(void)callAPIWithURLString:(NSString *)urlString andQueryParams:(NSDictionary *)queryParams andParams:(RKParams *)params andMethod:(RKRequestMethod)method andDidLoadObjectsCallback:(RKObjectLoaderDidLoadObjectsBlock)successCallback andDidFailWithErrorCallback:(RKObjectLoaderDidFailWithErrorBlock)errorCallback andPreRequestCallback:(RKObjectLoaderBlock)preRequestCallback;
 
--(void)createOrEditPostWithId:(NSNumber *)postId type:(TumblrPostType)type title:(NSString *)title body:(NSString *)body image:(UIImage *)image caption:(NSString *)caption photoLink:(NSString *)photoLink quote:(NSString *)quote citedSource:(NSString *)citedSource link:(NSString *)link linkedPageTitle:(NSString *)linkedPageTitle description:(NSString *)description audioFile:(NSData *)audioData videoFile:(NSData *)videoData state:(TumblrPostState)state tags:(NSArray *)tags create:(BOOL)create inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown expectFlatResponse:(BOOL)expectFlatResponse delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+-(void)createOrEditPostWithId:(NSNumber *)postId type:(TumblrPostType)type title:(NSString *)title body:(NSString *)body image:(UIImage *)image caption:(NSString *)caption photoLink:(NSString *)photoLink quote:(NSString *)quote citedSource:(NSString *)citedSource link:(NSString *)link linkedPageTitle:(NSString *)linkedPageTitle description:(NSString *)description conversation:(NSString *)conversation audioFile:(NSData *)audioData videoFile:(NSData *)videoData state:(TumblrPostState)state tags:(NSArray *)tags create:(BOOL)create inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown expectFlatResponse:(BOOL)expectFlatResponse delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadObjectsBlockWithBlock:(AWTumblrAPIv2ManagerDidLoadResponse)callback;
 -(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey orExtraSelectorParam:(id)extraSelectorParam;
@@ -254,7 +255,7 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
--(void)createOrEditPostWithId:(NSNumber *)postId type:(TumblrPostType)type title:(NSString *)title body:(NSString *)body image:(UIImage *)image caption:(NSString *)caption photoLink:(NSString *)photoLink quote:(NSString *)quote citedSource:(NSString *)citedSource link:(NSString *)link linkedPageTitle:(NSString *)linkedPageTitle description:(NSString *)description audioFile:(NSData *)audioData videoFile:(NSData *)videoData state:(TumblrPostState)state tags:(NSArray *)tags create:(BOOL)create inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown expectFlatResponse:(BOOL)expectFlatResponse delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+-(void)createOrEditPostWithId:(NSNumber *)postId type:(TumblrPostType)type title:(NSString *)title body:(NSString *)body image:(UIImage *)image caption:(NSString *)caption photoLink:(NSString *)photoLink quote:(NSString *)quote citedSource:(NSString *)citedSource link:(NSString *)link linkedPageTitle:(NSString *)linkedPageTitle description:(NSString *)description conversation:(NSString *)conversation audioFile:(NSData *)audioData videoFile:(NSData *)videoData state:(TumblrPostState)state tags:(NSArray *)tags create:(BOOL)create inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown expectFlatResponse:(BOOL)expectFlatResponse delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     // Prepare POST params
     RKParams *params = [RKParams params];
     [params setValue:[[self postTypes] objectAtIndex:type] forParam:kPostTypeParamName];
@@ -269,6 +270,7 @@ blogAvatarSizes = _blogAvatarSizes;
     if (link) [params setValue:link forParam:kPostLinkParamName];
     if (linkedPageTitle) [params setValue:linkedPageTitle forParam:kPostLinkedPageTitleParamName];
     if (description) [params setValue:description forParam:kPostDescriptionParamName];
+    if (conversation) [params setValue:conversation forParam:kPostConversationParamName];
     if (audioData) [params setData:audioData MIMEType:@"audio/mpeg"  forParam:kPostDataParamName];
     if (videoData) [params setData:videoData MIMEType:@"video/quicktime" forParam:kPostDataParamName];
     [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
@@ -872,7 +874,8 @@ blogAvatarSizes = _blogAvatarSizes;
                      citedSource:nil 
                             link:nil 
                  linkedPageTitle:nil 
-                     description:nil 
+                     description:nil
+                    conversation:nil
                        audioFile:nil 
                        videoFile:nil 
                            state:state 
@@ -899,6 +902,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             link:nil 
                  linkedPageTitle:nil 
                      description:nil 
+                    conversation:nil
                        audioFile:nil 
                        videoFile:nil 
                            state:state 
@@ -926,6 +930,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             link:nil 
                  linkedPageTitle:nil 
                      description:nil 
+                    conversation:nil
                        audioFile:nil 
                        videoFile:nil 
                            state:state 
@@ -952,6 +957,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             link:nil 
                  linkedPageTitle:nil 
                      description:nil 
+                    conversation:nil
                        audioFile:nil 
                        videoFile:nil 
                            state:state 
@@ -978,6 +984,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             link:nil 
                  linkedPageTitle:nil 
                      description:nil 
+                    conversation:nil
                        audioFile:audioData 
                        videoFile:nil 
                            state:state 
@@ -1004,6 +1011,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             link:nil 
                  linkedPageTitle:nil 
                      description:nil 
+                    conversation:nil
                        audioFile:audioData 
                        videoFile:nil 
                            state:state 
@@ -1030,6 +1038,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             link:nil 
                  linkedPageTitle:nil 
                      description:nil 
+                    conversation:nil
                        audioFile:nil 
                        videoFile:videoData 
                            state:state 
@@ -1056,6 +1065,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             link:nil 
                  linkedPageTitle:nil 
                      description:nil 
+                    conversation:nil
                        audioFile:nil 
                        videoFile:videoData 
                            state:state 
@@ -1082,6 +1092,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             link:nil 
                  linkedPageTitle:nil 
                      description:nil 
+                    conversation:nil
                        audioFile:nil 
                        videoFile:nil 
                            state:state 
@@ -1108,6 +1119,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             link:nil 
                  linkedPageTitle:nil 
                      description:nil 
+                    conversation:nil
                        audioFile:nil 
                        videoFile:nil 
                            state:state 
@@ -1134,6 +1146,7 @@ blogAvatarSizes = _blogAvatarSizes;
                             link:link 
                  linkedPageTitle:title 
                      description:description 
+                    conversation:nil
                        audioFile:nil 
                        videoFile:nil 
                            state:state 
@@ -1160,6 +1173,61 @@ blogAvatarSizes = _blogAvatarSizes;
                             link:link 
                  linkedPageTitle:title 
                      description:description 
+                    conversation:nil
+                       audioFile:nil 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:NO 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
+}
+
+
+-(void)createChatPostWithConversation:(NSString *)conversation andTitle:(NSString *)title andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    
+    [self createOrEditPostWithId:nil 
+                            type:TumblrPostTypeChat
+                           title:nil    
+                            body:nil 
+                           image:nil 
+                         caption:nil 
+                       photoLink:nil 
+                           quote:nil 
+                     citedSource:nil 
+                            link:nil 
+                 linkedPageTitle:title 
+                     description:nil 
+                    conversation:conversation
+                       audioFile:nil 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:YES 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
+}
+
+
+-(void)editChatPostWithId:(NSNumber *)postId withNewConversation:(NSString *)conversation andNewTitle:(NSString *)title andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    
+    [self createOrEditPostWithId:postId 
+                            type:TumblrPostTypeChat
+                           title:nil    
+                            body:nil 
+                           image:nil 
+                         caption:nil 
+                       photoLink:nil 
+                           quote:nil 
+                     citedSource:nil 
+                            link:nil 
+                 linkedPageTitle:title 
+                     description:nil 
+                    conversation:conversation
                        audioFile:nil 
                        videoFile:nil 
                            state:state 
