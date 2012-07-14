@@ -271,7 +271,7 @@ blogAvatarSizes = _blogAvatarSizes;
     if (linkedPageTitle) [params setValue:linkedPageTitle forParam:kPostLinkedPageTitleParamName];
     if (description) [params setValue:description forParam:kPostDescriptionParamName];
     if (comment) [params setValue:comment forParam:kPostCommentParamName];
-    if (audioData) [params setData:audioData forParam:kPostDataParamName];
+    if (audioData) [params setData:audioData MIMEType:@"audio/mpeg"  forParam:kPostDataParamName];
     if (videoData) [params setData:videoData forParam:kPostDataParamName];
     [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
     if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
@@ -963,6 +963,62 @@ blogAvatarSizes = _blogAvatarSizes;
                      description:nil 
                          comment:nil 
                        audioFile:nil 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:NO 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
+}
+
+
+-(void)createAudioPostWithFile:(NSData *)audioData andCaption:(NSString *)caption andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    
+    [self createOrEditPostWithId:nil 
+                            type:TumblrPostTypeAudio
+                       reblogKey:nil 
+                           title:nil    
+                            body:nil 
+                           image:nil 
+                         caption:caption 
+                       photoLink:nil 
+                           quote:nil 
+                     citedSource:nil 
+                            link:nil 
+                 linkedPageTitle:nil 
+                     description:nil 
+                         comment:nil 
+                       audioFile:audioData 
+                       videoFile:nil 
+                           state:state 
+                            tags:tags 
+                          create:YES 
+                  inBlogWithName:blogName 
+                    usesMarkdown:usesMarkdown 
+              expectFlatResponse:NO 
+                        delegate:delegate];
+}
+
+
+-(void)editAudioPostWithId:(NSNumber *)postId withNewFile:(NSData *)audioData andNewCaption:(NSString *)caption andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    
+    [self createOrEditPostWithId:postId 
+                            type:TumblrPostTypeAudio
+                       reblogKey:nil 
+                           title:nil    
+                            body:nil 
+                           image:nil 
+                         caption:caption 
+                       photoLink:nil 
+                           quote:nil 
+                     citedSource:nil 
+                            link:nil 
+                 linkedPageTitle:nil 
+                     description:nil 
+                         comment:nil 
+                       audioFile:audioData 
                        videoFile:nil 
                            state:state 
                             tags:tags 
