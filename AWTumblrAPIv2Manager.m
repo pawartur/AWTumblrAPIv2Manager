@@ -538,6 +538,17 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
+-(NSString *)stringByEscapingHTMLFromString:(NSString *)string{
+    NSString *escapedString = [string copy];
+    escapedString = [escapedString stringByReplacingOccurrencesOfString:@"&"  withString:@"&amp;"];
+    escapedString = [escapedString stringByReplacingOccurrencesOfString:@"<"  withString:@"&lt;"];
+    escapedString = [escapedString stringByReplacingOccurrencesOfString:@">"  withString:@"&gt;"];
+    escapedString = [escapedString stringByReplacingOccurrencesOfString:@"""" withString:@"&quot;"];    
+    escapedString = [escapedString stringByReplacingOccurrencesOfString:@"'"  withString:@"&#039;"];
+    return escapedString;
+}
+
+
 # pragma mark Authentication
 -(void)requestAccessTokensWithConsumerKey:(NSString *)consumerKey andConsumerSecretKey:(NSString *)consumerSecretKey andUsername:(NSString *)username andPassword:(NSString *)password delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     NSString *path = kRelativeAccessTokenURLString;
@@ -829,6 +840,25 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
+-(void)createQuotePostWithQuote:(NSString *)quote andCitedSource:(NSString *)source andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    // Prepare POST params
+    RKParams *params = [RKParams params];
+    [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypeQuote] forParam:kPostTypeParamName];
+    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
+    [params setValue:quote forParam:@"quote"];
+    if (source) [params setValue:source forParam:@"source"];
+    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
+    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
+    
+    NSString *createPostURLString = [NSString stringWithFormat:kRelativeCreatePostURLStringFormat, [self hostNameForBlogNamed:blogName]];
+    [self.objectManager loadObjectsAtResourcePath:createPostURLString usingBlock:^(RKObjectLoader *loader){
+        loader.method = RKRequestMethodPOST;
+        loader.onDidLoadObjects = [self standardOnDidLoadCreatedPostIdBlockWithDelegate:delegate];
+        loader.params = params;
+    }];
+}
+
+
 -(void)reblogPostWithId:(NSNumber *)postId andReblogKey:(NSString *)reblogKey withComment:(NSString *)comment andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     RKParams *params = [RKParams params];
     [params setValue:[postId stringValue] forParam:kPostIdParamName];
@@ -893,6 +923,26 @@ blogAvatarSizes = _blogAvatarSizes;
         loader.params = params;
     }];
 
+}
+
+
+-(void)editQuotePostWithId:(NSNumber *)postId withNewQuote:(NSString *)quote andNewCitedSource:(NSString *)source andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    RKParams *params = [RKParams params];
+    [params setValue:[postId stringValue] forParam:kPostIdParamName];
+    [params setValue:[[self postTypes] objectAtIndex:TumblrPostTypeQuote] forParam:kPostTypeParamName];
+    [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
+    [params setValue:quote forParam:@"quote"];
+    if (source) [params setValue:source forParam:@"source"];
+    if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
+    if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
+    
+    NSString *editPostURLString = [NSString stringWithFormat:kRelativeEditPostURLStringFormat, [self hostNameForBlogNamed:blogName]];
+    
+    [self.objectManager loadObjectsAtResourcePath:editPostURLString usingBlock:^(RKObjectLoader *loader){
+        loader.method = RKRequestMethodPOST;
+        loader.onDidLoadObjects = [self standardOnDidLoadEditPostIdBlockWithDelegate:delegate];
+        loader.params = params;
+    }];
 }
 
 
