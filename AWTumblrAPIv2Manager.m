@@ -102,15 +102,18 @@ NSString * const kBlogAvatarURLResponseKey = @"avatar_url";
 
 @interface AWTumblrAPIv2Manager()
 
-@property(nonatomic, strong) NSArray *postTypes;
-@property(nonatomic, strong) NSArray *postFilters;
-@property(nonatomic, strong) NSArray *postStates;
-@property(nonatomic, strong) NSArray *blogAvatarSizes;
+@property(nonatomic, strong, readonly) NSArray *postTypes;
+@property(nonatomic, strong, readonly) NSArray *postFilters;
+@property(nonatomic, strong, readonly) NSArray *postStates;
+@property(nonatomic, strong, readonly) NSArray *blogAvatarSizes;
+@property(nonatomic, strong, readonly) NSArray *imageMIMETypes;
+@property(nonatomic, strong, readonly) NSArray *videoMIMETypes;
+@property(nonatomic, strong, readonly) NSArray *audioMIMETypes;
 
 
 -(void)callAPIWithURLString:(NSString *)urlString andQueryParams:(NSDictionary *)queryParams andParams:(RKParams *)params andMethod:(RKRequestMethod)method andDidLoadObjectsCallback:(RKObjectLoaderDidLoadObjectsBlock)successCallback andDidFailWithErrorCallback:(RKObjectLoaderDidFailWithErrorBlock)errorCallback andPreRequestCallback:(RKObjectLoaderBlock)preRequestCallback;
 
--(void)createOrEditPostWithId:(NSNumber *)postId type:(TumblrPostType)type title:(NSString *)title body:(NSString *)body image:(UIImage *)image caption:(NSString *)caption photoLink:(NSString *)photoLink quote:(NSString *)quote citedSource:(NSString *)citedSource link:(NSString *)link linkedPageTitle:(NSString *)linkedPageTitle description:(NSString *)description conversation:(NSString *)conversation audioFile:(NSData *)audioData videoFile:(NSData *)videoData state:(TumblrPostState)state tags:(NSArray *)tags create:(BOOL)create inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown expectFlatResponse:(BOOL)expectFlatResponse delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+-(void)createOrEditPostWithId:(NSNumber *)postId type:(TumblrPostType)type title:(NSString *)title body:(NSString *)body image:(UIImage *)image caption:(NSString *)caption photoLink:(NSString *)photoLink quote:(NSString *)quote citedSource:(NSString *)citedSource link:(NSString *)link linkedPageTitle:(NSString *)linkedPageTitle description:(NSString *)description conversation:(NSString *)conversation audioFile:(NSData *)audioData videoFile:(NSData *)videoData mimeTypeString:(NSString *)mimeType state:(TumblrPostState)state tags:(NSArray *)tags create:(BOOL)create inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown expectFlatResponse:(BOOL)expectFlatResponse delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
 -(RKObjectLoaderDidLoadObjectsBlock)standardOnDidLoadObjectsBlockWithBlock:(AWTumblrAPIv2ManagerDidLoadResponse)callback;
 -(AWTumblrAPIv2ManagerDidLoadResponse)standardOnDidLoadAPIResponseBlockWithDelegate:(id <AWTumblrAPIv2ManagerDelegate>)delegate andSelector:(SEL)selector andExpectedStatusCode:(NSNumber *)statusCode andKeyToGet:(NSString *)responseKey orExtraSelectorParam:(id)extraSelectorParam;
@@ -148,7 +151,10 @@ objectManager = _objectManager,
 postTypes = _postTypes, 
 postFilters = _postFilters,
 postStates = _postStates,
-blogAvatarSizes = _blogAvatarSizes;
+blogAvatarSizes = _blogAvatarSizes,
+imageMIMETypes = _imageMIMETypes,
+videoMIMETypes = _videoMIMETypes,
+audioMIMETypes = _audioMIMETypes;
 
 
 #pragma mark Class Methods
@@ -226,6 +232,7 @@ blogAvatarSizes = _blogAvatarSizes;
 -(NSArray *)blogAvatarSizes{
     // An array of blog avatar sizes available in the API (the first one is never used)
     if (!_blogAvatarSizes) {
+        // WARNING! This has to correspond to the order in TumblrAvatarSize enum
         _blogAvatarSizes = [NSArray arrayWithObjects:
                             [NSNumber numberWithInt:0],
                             [NSNumber numberWithInt:16],
@@ -242,6 +249,50 @@ blogAvatarSizes = _blogAvatarSizes;
     return _blogAvatarSizes;
 }
 
+
+-imageMIMETypes{
+    if (!_imageMIMETypes) {
+        // WARNING! This has to correspond to the order in AWImageMIMEType enum
+        _imageMIMETypes = [NSArray arrayWithObjects:
+                           @"image/jpeg", // This is the default mimetype
+                           @"image/gif",
+                           @"image/jpeg",
+                           @"image/png",
+                           nil];
+    }
+    return _imageMIMETypes;
+}
+
+
+-videoMIMETypes{
+    if (!_videoMIMETypes) {
+        // WARNING! This has to correspond to the order in AWVideoMIMEType enum
+        _videoMIMETypes = [NSArray arrayWithObjects:
+                           @"video/quicktime", // This is the default mimetype
+                           @"video/quicktime",
+                           @"video/mp4",
+                           @"video/mpeg",
+                           nil];
+    }
+    return _videoMIMETypes;
+}
+
+
+-audioMIMETypes{
+    if (!_audioMIMETypes) {
+        // WARNING! This has to correspond to the order in AWAudioMIMEType enum
+        _audioMIMETypes = [NSArray arrayWithObjects:
+                           @"audio/mpeg", // This is the default mimetype
+                           @"audio/basic",
+                           @"audio/midi",
+                           @"audio/mpeg",
+                           @"audio/x-wav",
+                           nil];
+    }
+    return _audioMIMETypes;
+}
+
+
 -(void)callAPIWithURLString:(NSString *)urlString andQueryParams:(NSDictionary *)queryParams andParams:(RKParams *)params andMethod:(RKRequestMethod)method andDidLoadObjectsCallback:(RKObjectLoaderDidLoadObjectsBlock)successCallback andDidFailWithErrorCallback:(RKObjectLoaderDidFailWithErrorBlock)errorCallback andPreRequestCallback:(RKObjectLoaderBlock)preRequestCallback{
     [self.objectManager loadObjectsAtResourcePath:[urlString stringByAppendingQueryParameters:queryParams] usingBlock:^(RKObjectLoader *loader){
         loader.method = method;
@@ -255,27 +306,48 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
--(void)createOrEditPostWithId:(NSNumber *)postId type:(TumblrPostType)type title:(NSString *)title body:(NSString *)body image:(UIImage *)image caption:(NSString *)caption photoLink:(NSString *)photoLink quote:(NSString *)quote citedSource:(NSString *)citedSource link:(NSString *)link linkedPageTitle:(NSString *)linkedPageTitle description:(NSString *)description conversation:(NSString *)conversation audioFile:(NSData *)audioData videoFile:(NSData *)videoData state:(TumblrPostState)state tags:(NSArray *)tags create:(BOOL)create inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown expectFlatResponse:(BOOL)expectFlatResponse delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+-(void)createOrEditPostWithId:(NSNumber *)postId type:(TumblrPostType)type title:(NSString *)title body:(NSString *)body image:(UIImage *)image caption:(NSString *)caption photoLink:(NSString *)photoLink quote:(NSString *)quote citedSource:(NSString *)citedSource link:(NSString *)link linkedPageTitle:(NSString *)linkedPageTitle description:(NSString *)description conversation:(NSString *)conversation audioFile:(NSData *)audioData videoFile:(NSData *)videoData mimeTypeString:(NSString *)mimeType state:(TumblrPostState)state tags:(NSArray *)tags create:(BOOL)create inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown expectFlatResponse:(BOOL)expectFlatResponse delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+    
     // Prepare POST params
     RKParams *params = [RKParams params];
+    
+    // Common params
     [params setValue:[[self postTypes] objectAtIndex:type] forParam:kPostTypeParamName];
     if (postId) [params setValue:[postId stringValue] forParam:kPostIdParamName];
-    if (title) [params setValue:title forParam:kPostTitleParamName];
-    if (body) [params setValue:body forParam:kPostBodyParamName];
-    if (image) [params setData:UIImagePNGRepresentation(image) MIMEType:@"image/png" forParam:kPostDataParamName];
-    if (caption) [params setValue:caption forParam:kPostCaptionParamName];
-    if (photoLink) [params setValue:photoLink forParam:kPostPhotoLinkParamName];
-    if (quote) [params setValue:quote forParam:kPostQuoteParamName];
-    if (citedSource) [params setValue:citedSource forParam:kPostCitedSourceParamName];
-    if (link) [params setValue:link forParam:kPostLinkParamName];
-    if (linkedPageTitle) [params setValue:linkedPageTitle forParam:kPostLinkedPageTitleParamName];
-    if (description) [params setValue:description forParam:kPostDescriptionParamName];
-    if (conversation) [params setValue:conversation forParam:kPostConversationParamName];
-    if (audioData) [params setData:audioData MIMEType:@"audio/mpeg"  forParam:kPostDataParamName];
-    if (videoData) [params setData:videoData MIMEType:@"video/quicktime" forParam:kPostDataParamName];
     [params setValue:(usesMarkdown ? @"True": @"False") forParam:kPostAllowsMarkdownParamName];
     if (state) [params setValue:[self.postStates objectAtIndex:state] forParam:kPostStateParamName];
     if (tags) [params setValue:[tags componentsJoinedByString:@","] forParam:kPostTagsParamName];
+    
+    // Common to Text and Chat Posts
+    if (title) [params setValue:title forParam:kPostTitleParamName];
+    
+    // Text Posts
+    if (body) [params setValue:body forParam:kPostBodyParamName];
+    
+    // Chat Posts
+    if (conversation) [params setValue:conversation forParam:kPostConversationParamName];
+    
+    // Common to Photo, Video and Audio Posts
+    if (caption) [params setValue:caption forParam:kPostCaptionParamName];
+    
+    // Photo Posts
+    if (image) [params setData:UIImagePNGRepresentation(image) MIMEType:mimeType forParam:kPostDataParamName];
+    if (photoLink) [params setValue:photoLink forParam:kPostPhotoLinkParamName];
+    
+    // Video Posts
+    if (videoData) [params setData:videoData MIMEType:mimeType forParam:kPostDataParamName];
+    
+    // Audio Posts
+    if (audioData) [params setData:audioData MIMEType:mimeType  forParam:kPostDataParamName];
+    
+    // Quote Posts
+    if (quote) [params setValue:quote forParam:kPostQuoteParamName];
+    if (citedSource) [params setValue:citedSource forParam:kPostCitedSourceParamName];
+    
+    // Link Posts
+    if (link) [params setValue:link forParam:kPostLinkParamName];
+    if (linkedPageTitle) [params setValue:linkedPageTitle forParam:kPostLinkedPageTitleParamName];
+    if (description) [params setValue:description forParam:kPostDescriptionParamName];
     
     // Set the url and callbacks
     NSString *urlString;
@@ -878,6 +950,7 @@ blogAvatarSizes = _blogAvatarSizes;
                     conversation:nil
                        audioFile:nil 
                        videoFile:nil 
+                  mimeTypeString:nil
                            state:state 
                             tags:tags 
                           create:YES 
@@ -904,7 +977,8 @@ blogAvatarSizes = _blogAvatarSizes;
                      description:nil 
                     conversation:nil
                        audioFile:nil 
-                       videoFile:nil 
+                       videoFile:nil
+                  mimeTypeString:nil
                            state:state 
                             tags:tags 
                           create:NO 
@@ -916,7 +990,7 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
--(void)createPhotoPostWithImage:(UIImage *)image andCaption:(NSString *)caption andLink:(NSString *)link andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+-(void)createPhotoPostWithImage:(UIImage *)image andMIMEType:(AWImageMIMEType)mimeType andCaption:(NSString *)caption andLink:(NSString *)link andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     
     [self createOrEditPostWithId:nil 
                             type:TumblrPostTypePhoto 
@@ -933,6 +1007,7 @@ blogAvatarSizes = _blogAvatarSizes;
                     conversation:nil
                        audioFile:nil 
                        videoFile:nil 
+                  mimeTypeString:[self.imageMIMETypes objectAtIndex:mimeType]
                            state:state 
                             tags:tags 
                           create:YES 
@@ -943,7 +1018,7 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
--(void)editPhotoPostWithId:(NSNumber *)postId withNewImage:(UIImage *)image andNewCaption:(NSString *)caption andNewLink:(NSString*)link andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+-(void)editPhotoPostWithId:(NSNumber *)postId withNewImage:(UIImage *)image andNewMIMEType:(AWImageMIMEType)mimeType andNewCaption:(NSString *)caption andNewLink:(NSString*)link andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     
     [self createOrEditPostWithId:postId 
                             type:TumblrPostTypePhoto 
@@ -959,7 +1034,8 @@ blogAvatarSizes = _blogAvatarSizes;
                      description:nil 
                     conversation:nil
                        audioFile:nil 
-                       videoFile:nil 
+                       videoFile:nil
+                  mimeTypeString:[self.imageMIMETypes objectAtIndex:mimeType]
                            state:state 
                             tags:tags 
                           create:NO 
@@ -970,7 +1046,7 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
--(void)createAudioPostWithFile:(NSData *)audioData andCaption:(NSString *)caption andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+-(void)createAudioPostWithFile:(NSData *)audioData andMIMEType:(AWAudioMIMEType)mimeType andCaption:(NSString *)caption andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     
     [self createOrEditPostWithId:nil 
                             type:TumblrPostTypeAudio
@@ -987,6 +1063,7 @@ blogAvatarSizes = _blogAvatarSizes;
                     conversation:nil
                        audioFile:audioData 
                        videoFile:nil 
+                  mimeTypeString:[self.audioMIMETypes objectAtIndex:mimeType]
                            state:state 
                             tags:tags 
                           create:YES 
@@ -997,7 +1074,7 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
--(void)editAudioPostWithId:(NSNumber *)postId withNewFile:(NSData *)audioData andNewCaption:(NSString *)caption andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+-(void)editAudioPostWithId:(NSNumber *)postId withNewFile:(NSData *)audioData andNewMIMEType:(AWAudioMIMEType)mimeType andNewCaption:(NSString *)caption andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     
     [self createOrEditPostWithId:postId 
                             type:TumblrPostTypeAudio
@@ -1014,6 +1091,7 @@ blogAvatarSizes = _blogAvatarSizes;
                     conversation:nil
                        audioFile:audioData 
                        videoFile:nil 
+                  mimeTypeString:[self.audioMIMETypes objectAtIndex:mimeType]
                            state:state 
                             tags:tags 
                           create:NO 
@@ -1024,7 +1102,7 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
--(void)createVideoPostWithFile:(NSData *)videoData andCaption:(NSString *)caption andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+-(void)createVideoPostWithFile:(NSData *)videoData andMIMEType:(AWVideoMIMEType)mimeType andCaption:(NSString *)caption andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     
     [self createOrEditPostWithId:nil 
                             type:TumblrPostTypeVideo
@@ -1040,7 +1118,8 @@ blogAvatarSizes = _blogAvatarSizes;
                      description:nil 
                     conversation:nil
                        audioFile:nil 
-                       videoFile:videoData 
+                       videoFile:videoData
+                  mimeTypeString:[self.videoMIMETypes objectAtIndex:mimeType]
                            state:state 
                             tags:tags 
                           create:YES 
@@ -1051,7 +1130,7 @@ blogAvatarSizes = _blogAvatarSizes;
 }
 
 
--(void)editVideoPostWithId:(NSNumber *)postId withNewFile:(NSData *)videoData andNewCaption:(NSString *)caption andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
+-(void)editVideoPostWithId:(NSNumber *)postId withNewFile:(NSData *)videoData andNewMIMEType:(AWVideoMIMEType)mimeType andNewCaption:(NSString *)caption andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate{
     
     [self createOrEditPostWithId:postId 
                             type:TumblrPostTypeVideo
@@ -1067,7 +1146,8 @@ blogAvatarSizes = _blogAvatarSizes;
                      description:nil 
                     conversation:nil
                        audioFile:nil 
-                       videoFile:videoData 
+                       videoFile:videoData
+                  mimeTypeString:[self.videoMIMETypes objectAtIndex:mimeType]
                            state:state 
                             tags:tags 
                           create:NO 
@@ -1095,6 +1175,7 @@ blogAvatarSizes = _blogAvatarSizes;
                     conversation:nil
                        audioFile:nil 
                        videoFile:nil 
+                  mimeTypeString:nil
                            state:state 
                             tags:tags 
                           create:YES 
@@ -1122,6 +1203,7 @@ blogAvatarSizes = _blogAvatarSizes;
                     conversation:nil
                        audioFile:nil 
                        videoFile:nil 
+                  mimeTypeString:nil
                            state:state 
                             tags:tags 
                           create:NO 
@@ -1149,6 +1231,7 @@ blogAvatarSizes = _blogAvatarSizes;
                     conversation:nil
                        audioFile:nil 
                        videoFile:nil 
+                  mimeTypeString:nil
                            state:state 
                             tags:tags 
                           create:YES 
@@ -1176,6 +1259,7 @@ blogAvatarSizes = _blogAvatarSizes;
                     conversation:nil
                        audioFile:nil 
                        videoFile:nil 
+                  mimeTypeString:nil
                            state:state 
                             tags:tags 
                           create:NO 
@@ -1203,6 +1287,7 @@ blogAvatarSizes = _blogAvatarSizes;
                     conversation:conversation
                        audioFile:nil 
                        videoFile:nil 
+                  mimeTypeString:nil
                            state:state 
                             tags:tags 
                           create:YES 
@@ -1230,6 +1315,7 @@ blogAvatarSizes = _blogAvatarSizes;
                     conversation:conversation
                        audioFile:nil 
                        videoFile:nil 
+                  mimeTypeString:nil
                            state:state 
                             tags:tags 
                           create:NO 

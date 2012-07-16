@@ -63,6 +63,28 @@ typedef enum{
     TumblrPostStatePublished
 } TumblrPostState;
 
+typedef enum{
+    AWAudioMIMETypeDefault,
+    AWAudioMIMETypeBasic,
+    AWAudioMIMETypeMidi,
+    AWAudioMIMETypeMPEG,
+    AWAudioMIMETypeXWav,
+} AWAudioMIMEType;
+
+typedef enum{
+    AWVideoMIMETypeDefault,
+    AWVideoMIMETypeQuicktime,
+    AWVideoMIMETypeMP4,
+    AWVideoMIMETypeMPEG
+} AWVideoMIMEType;
+
+typedef enum{
+    AWImageMIMETypeDefault,
+    AWImageMIMETypeGIF,
+    AWImageMIMETypeJPEG,
+    AWImageMIMETypePNG    
+} AWImageMIMEType;
+
 
 typedef void(^AWTumblrAPIv2ManagerDidLoadResponse)(AWTumblrAPIv2Response *apiResponse);
 
@@ -106,17 +128,17 @@ typedef void(^AWTumblrAPIv2ManagerDidLoadResponse)(AWTumblrAPIv2Response *apiRes
 
 -(void)editTextPostWithId:(NSNumber *)postId withNewTitle:(NSString *)title andNewBody:(NSString *)body andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
--(void)createPhotoPostWithImage:(UIImage *)image andCaption:(NSString *)caption andLink:(NSString *)link andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+-(void)createPhotoPostWithImage:(UIImage *)image andMIMEType:(AWImageMIMEType)mimeType andCaption:(NSString *)caption andLink:(NSString *)link andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
--(void)editPhotoPostWithId:(NSNumber *)postId withNewImage:(UIImage *)image andNewCaption:(NSString *)caption andNewLink:(NSString *)link andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+-(void)editPhotoPostWithId:(NSNumber *)postId withNewImage:(UIImage *)image andNewMIMEType:(AWImageMIMEType)mimeType andNewCaption:(NSString *)caption andNewLink:(NSString *)link andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
--(void)createAudioPostWithFile:(NSData *)audioData andCaption:(NSString *)caption andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+-(void)createAudioPostWithFile:(NSData *)audioData andMIMEType:(AWAudioMIMEType)mimeType andCaption:(NSString *)caption andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
--(void)editAudioPostWithId:(NSNumber *)postId withNewFile:(NSData *)audioData andNewCaption:(NSString *)caption andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+-(void)editAudioPostWithId:(NSNumber *)postId withNewFile:(NSData *)audioData andNewMIMEType:(AWAudioMIMEType)mimeType andNewCaption:(NSString *)caption andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
--(void)createVideoPostWithFile:(NSData *)videoData andCaption:(NSString *)caption andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+-(void)createVideoPostWithFile:(NSData *)videoData andMIMEType:(AWVideoMIMEType)mimeType andCaption:(NSString *)caption andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
--(void)editVideoPostWithId:(NSNumber *)postId withNewFile:(NSData *)videoData andNewCaption:(NSString *)caption andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
+-(void)editVideoPostWithId:(NSNumber *)postId withNewFile:(NSData *)videoData andNewMIMEType:(AWVideoMIMEType)mimeType andNewCaption:(NSString *)caption andNewState:(TumblrPostState)state andNewTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 
 -(void)createQuotePostWithQuote:(NSString *)quote andCitedSource:(NSString *)source andState:(TumblrPostState)state andTags:(NSArray *)tags inBlogWithName:(NSString *)blogName usesMarkdown:(BOOL)usesMarkdown delegate:(id<AWTumblrAPIv2ManagerDelegate>)delegate;
 

@@ -25,4 +25,3 @@ It currently supports (see the manager's header file for details):
 
 Remaining problems:
 - creating/editing a post so that it uses markdown doesn't seem to work
-- mimetypes of images, audio files and video files are set to "image/png", "audio/mpeg" and "video/quicktime" respectively, so other types might not work.
