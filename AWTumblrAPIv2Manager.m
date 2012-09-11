@@ -162,7 +162,7 @@ audioMIMETypes = _audioMIMETypes;
     static dispatch_once_t onceToken;
     static AWTumblrAPIv2Manager *manager = nil;
     dispatch_once(&onceToken, ^{
-        RKLogConfigureByName("RestKit/Network*", RKLogLevelTrace);
+        //RKLogConfigureByName("RestKit/Network*", RKLogLevelTrace);
         //RKLogConfigureByName("RestKit/ObjectMapping", RKLogLevelTrace);
         manager = [[AWTumblrAPIv2Manager alloc] init];
         
