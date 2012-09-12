@@ -753,9 +753,7 @@ audioMIMETypes = _audioMIMETypes;
     };
     
     // Define the onDidFailLoadWithError handler
-    request.onDidFailLoadWithError = ^(NSError *error){
-        NSLog(@"error %@", error);
-    };
+    request.onDidFailLoadWithError = [self standardOnDidFailWithErrorBlockWithDelegate:delegate];
     
     // Send the request
     [request send];

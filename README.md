@@ -40,7 +40,7 @@ Remaining problems:
                                                                     delegate:aDelegate];
 ```
 
-* check if you successfully received the tokens by implementing the tumblrAPIv2Manager: didAuthenticateAndReceivedAccessToken:andAccessTokenSecret: method in your delegate
+* check if you successfully received the tokens by implementing the tumblrAPIv2Manager:didAuthenticateAndReceivedAccessToken:andAccessTokenSecret: method in your delegate
 
 ```objective-c
 -(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didAuthenticateAndReceivedAccessToken:(NSString *)accessToken andAccessTokenSecret:(NSString *)accessTokenSecret{
@@ -48,4 +48,20 @@ Remaining problems:
 }
 ```
 
+* if the sharedManager fails with its request, the tumblrAPIv2Manager:didFailWithError: method of the delegate will be called.
+
+```objective-c
+-(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didFailWithError:(NSError *)error{
+    NSLog(@"We failed with error %@", error);
+}
+```
+
 * implement other AWTumblrAPIv2ManagerDelegate methods and make other API calls with sharedManager, depending on your needs.
+
+* if the manager get an error message from the Tumblr API, the  method tumblrAPIv2Manager:didReceiveErrorMessage: of the delegate will be called
+
+```objective-c
+-(void)tumblrAPIv2Manager:(AWTumblrAPIv2Manager *)manager didReceiveErrorMessage:(NSString *)message{
+    NSLog(@"Received error message %@", message);
+}
+```
