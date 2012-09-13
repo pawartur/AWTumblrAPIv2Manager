@@ -30,6 +30,10 @@ Remaining problems:
 
 ## Usage
 
+* Install RestKit!
+
+Got to RestKit's GitHub page and follow the installation instructions. This manager has been written for and tested with RestKit 0.10.0.
+
 * Get the sharedManager instance and use it to get access tokens from Tumblr
 
 ```objective-c
